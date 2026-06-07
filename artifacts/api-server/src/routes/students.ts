@@ -242,7 +242,10 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
 
   const studentIds = rows.map(s => s.id);
 
-  const inventoryRows = studentIds.length
+  type InvRow = { studentId: string; messCard: boolean | null; messCardGivenAt: Date | null; messCardRevokedAt: Date | null; updatedBy: string | null };
+  type CheckinRow = { studentId: string; volunteerId: string | null; checkInTime: Date | null; checkOutTime: Date | null };
+
+  const inventoryRows: InvRow[] = studentIds.length
     ? await db.select({
         studentId: studentInventoryTable.studentId,
         messCard: studentInventoryTable.messCard,
@@ -252,7 +255,7 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
       }).from(studentInventoryTable).where(inArray(studentInventoryTable.studentId, studentIds))
     : [];
 
-  const checkinRows = studentIds.length
+  const checkinRows: CheckinRow[] = studentIds.length
     ? await db.select({
         studentId: checkinsTable.studentId,
         volunteerId: checkinsTable.volunteerId,
@@ -264,18 +267,18 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
       ))
     : [];
 
-  const inventoryMap = new Map(inventoryRows.map(r => [r.studentId, r]));
+  const inventoryMap = new Map(inventoryRows.map((r) => [r.studentId, r]));
 
   // Resolve staff names for mess card "given by" (inventory.updatedBy)
-  const updatedByIds = [...new Set(inventoryRows.filter(r => r.updatedBy).map(r => r.updatedBy!))];
+  const updatedByIds = [...new Set(inventoryRows.filter((r) => r.updatedBy).map((r) => r.updatedBy!))];
   // Resolve staff names for check-in "checked in by" (checkin.volunteerId)
-  const checkinVolunteerIds = [...new Set(checkinRows.filter(r => r.volunteerId).map(r => r.volunteerId!))];
+  const checkinVolunteerIds = [...new Set(checkinRows.filter((r) => r.volunteerId).map((r) => r.volunteerId!))];
   const allStaffIds = [...new Set([...updatedByIds, ...checkinVolunteerIds])];
-  const staffNameRows = allStaffIds.length
+  const staffNameRows: { id: string; name: string | null }[] = allStaffIds.length
     ? await db.select({ id: usersTable.id, name: usersTable.name })
         .from(usersTable).where(inArray(usersTable.id, allStaffIds))
     : [];
-  const staffNameById = new Map(staffNameRows.map(s => [s.id, s.name]));
+  const staffNameById = new Map(staffNameRows.map((s) => [s.id, s.name]));
 
   const checkinMap = new Map<string, { checkInTime: Date | null; checkOutTime: Date | null; volunteerId: string | null }>();
   for (const row of checkinRows) {
@@ -326,7 +329,7 @@ router.get("/:id/checkins-history", requireAuth, async (req: AuthRequest, res) =
     .orderBy(desc(checkinsTable.checkInTime))
     .limit(limit);
 
-  res.json(rows.map((r) => ({
+  res.json((rows as any[]).map((r: any) => ({
     ...r,
     checkInTime: r.checkInTime?.toISOString() || null,
     checkOutTime: r.checkOutTime?.toISOString() || null,

@@ -163,22 +163,22 @@ router.get("/logs", requireVolunteer, async (req: AuthRequest, res) => {
     .limit(1000);
 
   if (scopedIds) {
-    logs = logs.filter(l => scopedIds.includes(l.hostelId || l.userHostelId || ""));
+    logs = logs.filter((l: any) => scopedIds.includes(l.hostelId || l.userHostelId || ""));
   }
-  if (userId) logs = logs.filter(l => l.userId === userId);
-  if (hostelId) logs = logs.filter(l => l.hostelId === hostelId || l.userHostelId === hostelId);
-  if (typeParam) logs = logs.filter(l => l.type === typeParam);
+  if (userId) logs = logs.filter((l: any) => l.userId === userId);
+  if (hostelId) logs = logs.filter((l: any) => l.hostelId === hostelId || l.userHostelId === hostelId);
+  if (typeParam) logs = logs.filter((l: any) => l.type === typeParam);
 
   const page = logs.slice(offset, offset + limit);
 
   // Resolve hostel names in one query
-  const hostelIds = [...new Set(page.map(l => l.hostelId).filter(Boolean))] as string[];
+  const hostelIds = [...new Set((page as any[]).map((l: any) => l.hostelId).filter(Boolean))] as string[];
   const hostelRows = hostelIds.length
     ? await db.select({ id: hostelsTable.id, name: hostelsTable.name }).from(hostelsTable).where(inArray(hostelsTable.id, hostelIds))
-    : [];
-  const hostelNameById = new Map(hostelRows.map(h => [h.id, h.name]));
+    : [] as { id: string; name: string | null }[];
+  const hostelNameById = new Map(hostelRows.map((h) => [h.id, h.name]));
 
-  res.json(page.map(l => ({
+  res.json((page as any[]).map((l: any) => ({
     ...l,
     hostelName: l.hostelId ? (hostelNameById.get(l.hostelId) || null) : null,
     createdAt: l.createdAt.toISOString(),
@@ -213,8 +213,8 @@ router.get("/all", requireVolunteer, async (req: AuthRequest, res) => {
     .where(roleWhere)
     .orderBy(usersTable.role, usersTable.name);
 
-  const filtered = staff.filter((s) => staffOverlapsScope(s, scopedIds));
-  res.json(filtered.map(s => ({
+  const filtered = staff.filter((s: any) => staffOverlapsScope(s, scopedIds));
+  res.json(filtered.map((s: any) => ({
     ...s,
     assignedHostelIds: (() => { try { return JSON.parse(s.assignedHostelIds || "[]"); } catch { return []; } })(),
     isOnline: isOnline(s.lastActiveAt),
@@ -283,7 +283,7 @@ router.get("/:staffId/logs", requireAdmin, async (req: AuthRequest, res) => {
 
   res.json({
     staff: { ...staffMember, isOnline: isOnline(staffMember.lastActiveAt), lastActiveAt: staffMember.lastActiveAt?.toISOString() || null },
-    logs: logs.map(l => ({ ...l, createdAt: l.createdAt.toISOString() })),
+    logs: logs.map((l: any) => ({ ...l, createdAt: l.createdAt.toISOString() })),
     total: logs.length,
   });
 });

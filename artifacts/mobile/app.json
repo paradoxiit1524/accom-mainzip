@@ -62,7 +62,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://campusops-api-production.up.railway.app/api",
+      "apiUrl": "https://campusops.up.railway.app/api",
       "router": {
         "origin": "https://localhost",
         "headOrigin": "https://localhost"

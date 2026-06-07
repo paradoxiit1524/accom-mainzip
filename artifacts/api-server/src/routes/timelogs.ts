@@ -46,7 +46,7 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
     .limit(limit)
     .offset(offset);
 
-  res.json(logs.map(l => ({ ...l, createdAt: l.createdAt.toISOString() })));
+  res.json((logs as any[]).map((l: any) => ({ ...l, createdAt: l.createdAt.toISOString() })));
 });
 
 // GET /api/timelogs/today — today's activity logs with JOIN (volunteer+)
@@ -68,8 +68,8 @@ router.get("/today", requireVolunteer, async (_req: AuthRequest, res) => {
     .orderBy(desc(timeLogsTable.createdAt))
     .limit(200);
 
-  const todayLogs = logs.filter(l => new Date(l.createdAt) >= today);
-  res.json(todayLogs.map(l => ({ ...l, createdAt: l.createdAt.toISOString() })));
+  const todayLogs = logs.filter((l: any) => new Date(l.createdAt) >= today);
+  res.json(todayLogs.map((l: any) => ({ ...l, createdAt: l.createdAt.toISOString() })));
 });
 
 export default router;
