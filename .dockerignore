@@ -1,0 +1,27 @@
+# Git
+.git
+.gitignore
+
+# Node modules (reinstalled inside Docker)
+node_modules
+**/node_modules
+
+# Mobile app — not needed on Railway
+artifacts/mobile
+artifacts/mockup-sandbox
+
+# Replit-specific
+.replit
+replit.nix
+.local
+attached_assets
+RAILWAY_DEPLOY.md
+
+# Built output (rebuilt inside Docker)
+artifacts/web-admin/dist
+**/dist
+
+# Misc
+*.log
+.env
+.env.*

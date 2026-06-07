@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: campusops-api
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: >-
+      pnpm install --no-frozen-lockfile &&
+      pnpm --filter @workspace/web-admin run build &&
+      pnpm --filter @workspace/api-server run build
+    startCommand: >-
+      pnpm --filter @workspace/db run push &&
+      node artifacts/api-server/dist/index.cjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8080"
+      - key: AUTO_SEED
+        value: "false"
+      - key: SEED_REAL_DATA
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+databases:
+  - name: campusops-db
+    databaseName: campusops
+    user: campusops
+    plan: free

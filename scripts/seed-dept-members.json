@@ -1,0 +1,314 @@
+[
+  {
+    "email": "21f3003255@ds.study.iitm.ac.in",
+    "name": "Astitva Vats Pandey",
+    "phone": "8840585790",
+    "role": "superadmin"
+  },
+  {
+    "email": "24f2007471@ds.study.iitm.ac.in",
+    "name": "Deeksha",
+    "phone": "6381182945",
+    "role": "superadmin"
+  },
+  {
+    "email": "24f3100093@es.study.iitm.ac.in",
+    "name": "ANURAG SHARMA",
+    "phone": "7061954624",
+    "role": "admin"
+  },
+  {
+    "email": "23f3000358@es.study.iitm.ac.in",
+    "name": "Abhishek Meena",
+    "phone": "9468828681",
+    "role": "admin"
+  },
+  {
+    "email": "25f2006131@ds.study.iitm.ac.in",
+    "name": "Drishti Garg",
+    "phone": "9651602468",
+    "role": "admin"
+  },
+  {
+    "email": "25f2006445@ds.study.iitm.ac.in",
+    "name": "Aryan Kumar",
+    "phone": "7631825223",
+    "role": "admin"
+  },
+  {
+    "email": "25f2005275@ds.study.iitm.ac.in",
+    "name": "RAKSHITH A V R",
+    "phone": "8300066003",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f1002825@ds.study.iitm.ac.in",
+    "name": "Gourav Vyas",
+    "phone": "8800523418",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3003369@ds.study.iitm.ac.in",
+    "name": "Hritik Kumar Roushan",
+    "phone": "6200672315",
+    "role": "volunteer"
+  },
+  {
+    "email": "23f3002381@ds.study.iitm.ac.in",
+    "name": "DUDDE JASMITHA",
+    "phone": "9347775934",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3100051@es.study.iitm.ac.in",
+    "name": "Khwaish tyagi",
+    "phone": "8810234149",
+    "role": "volunteer"
+  },
+  {
+    "email": "23f2004901@ds.study.iitm.ac.in",
+    "name": "Charmika Mannam",
+    "phone": "7569968433",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f3005246@ds.study.iitm.ac.in",
+    "name": "Shaheen N",
+    "phone": "9500612402",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3005033@ds.study.iitm.ac.in",
+    "name": "Uday Pratap Singh",
+    "phone": "8650969500",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3002105@ds.study.iitm.ac.in",
+    "name": "Abhay Shukla",
+    "phone": "7379814326",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2000490@ds.study.iitm.ac.in",
+    "name": "Gopal Krishna Sharma",
+    "phone": "7357567784",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f1001943@ds.study.iitm.ac.in",
+    "name": "Sanjana",
+    "phone": "9880396368",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f2004660@ds.study.iitm.ac.in",
+    "name": "Ashutosh Ray Mohapatra",
+    "phone": "8144038307",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f2002110@ds.study.iitm.ac.in",
+    "name": "AMRUTANSHU SAHOO",
+    "phone": "9337346991",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3005141@ds.study.iitm.ac.in",
+    "name": "Gagan",
+    "phone": "8059580047",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3000516@ds.study.iitm.ac.in",
+    "name": "Deepak Kumar Jena",
+    "phone": "9346316469",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f1002578@ds.study.iitm.ac.in",
+    "name": "Rohan Jha",
+    "phone": "8126181163",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f3005259@ds.study.iitm.ac.in",
+    "name": "Chandan kumar gurjar",
+    "phone": "9549912969",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2008840@ds.study.iitm.ac.in",
+    "name": "Manish Bisht",
+    "phone": "6396266866",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2006140@ds.study.iitm.ac.in",
+    "name": "Amresh Yadav",
+    "phone": "7235069001",
+    "role": "volunteer"
+  },
+  {
+    "email": "23f2004112@ds.study.iitm.ac.in",
+    "name": "Rishabh Barthwal",
+    "phone": "7974620388",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f3004869@ds.study.iitm.ac.in",
+    "name": "Aparna Mishra",
+    "phone": "7380930655",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3005086@ds.study.iitm.ac.in",
+    "name": "Sameer mishra",
+    "phone": "9720413710",
+    "role": "volunteer"
+  },
+  {
+    "email": "23f1002643@ds.study.iitm.ac.in",
+    "name": "Saini Nirmal",
+    "phone": "9352863308",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f3005205@ds.study.iitm.ac.in",
+    "name": "Aditya Kumar",
+    "phone": "9122907680",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3001985@ds.study.iitm.ac.in",
+    "name": "Khushi",
+    "phone": "9520591360",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f3003105@ds.study.iitm.ac.in",
+    "name": "KANMANI V",
+    "phone": "9444540648",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f3000058@ds.study.iitm.ac.in",
+    "name": "Ameera Hussain",
+    "phone": "9791292089",
+    "role": "volunteer"
+  },
+  {
+    "email": "26f1000343@ds.study.iitm.ac.in",
+    "name": "Purvi Bijwasania",
+    "phone": "8369319510",
+    "role": "volunteer"
+  },
+  {
+    "email": "23f3002449@ds.study.iitm.ac.in",
+    "name": "Nithish Lakshmanasamy",
+    "phone": "8072099161",
+    "role": "volunteer"
+  },
+  {
+    "email": "22f3000718@ds.study.iitm.ac.in",
+    "name": "Akshay Das M C G",
+    "phone": "9080860100",
+    "role": "volunteer"
+  },
+  {
+    "email": "26f1000697@ds.study.iitm.ac.in",
+    "name": "Taaleah Anwaar",
+    "phone": "6291919672",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f3000589@ds.study.iitm.ac.in",
+    "name": "chinthapenta srikar",
+    "phone": "7396096846",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2007135@ds.study.iitm.ac.in",
+    "name": "Aditya Agrawal",
+    "phone": "7570031599",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2000407@ds.study.iitm.ac.in",
+    "name": "Sanyam Sinha",
+    "phone": "9523470160",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2007425@ds.study.iitm.ac.in",
+    "name": "Subhojeet Kumar Das",
+    "phone": "9798270723",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f3100139@es.study.iitm.ac.in",
+    "name": "Unnati Patil",
+    "phone": "7353509191",
+    "role": "volunteer"
+  },
+  {
+    "email": "23f3000119@ds.study.iitm.ac.in",
+    "name": "Samyuktha J",
+    "phone": "8825949266",
+    "role": "volunteer"
+  },
+  {
+    "email": "24f2008742@ds.study.iitm.ac.in",
+    "name": "Mohammed Jubair A",
+    "phone": "8438433361",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f1000305@ds.study.iitm.ac.in",
+    "name": "Sayanka Kalita",
+    "phone": "6002708316",
+    "role": "volunteer"
+  },
+  {
+    "email": "23f2000988@ds.study.iitm.ac.in",
+    "name": "Akash deep",
+    "phone": "7295025609",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f1000720@ds.study.iitm.ac.in",
+    "name": "susanthika",
+    "phone": "7358998362",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f3100044@es.study.iitm.ac.in",
+    "name": "Sibala Bose",
+    "phone": "9531654256",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2005681@ds.study.iitm.ac.in",
+    "name": "Guraja Sunidhi",
+    "phone": "7780399339",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2008461@ds.study.iitm.ac.in",
+    "name": "Parth Dixit",
+    "phone": "7055593941",
+    "role": "volunteer"
+  },
+  {
+    "email": "25f2001196@ds.study.iitm.ac.in",
+    "name": "Aishwarya Shashikant Mhaishalkar",
+    "phone": "8956705013",
+    "role": "volunteer"
+  },
+  {
+    "email": "22f2001175@ds.study.iitm.ac.in",
+    "name": "Lakshika Sheoran",
+    "phone": "9717118189",
+    "role": "volunteer"
+  }
+]

@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "_9xG2dd1ZEIbC9GTYXsR8"
+uri = "file://CAMPUSOPS_GUIDE.md"
+type = "text"
+title = "CampusOps — Complete Deployment Guide (Updated)"
+
+[[outputs]]
+id = "WUcuzuEq7DTbUI9A-5xR7"
+uri = "file://DEPLOY.md"
+type = "text"
+title = "CampusOps — Full Deployment Guide"

@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CampusOps — Technical Presentation</title>
+<style>
+  :root {
+    --purple: #8B5CF6;
+    --purple-light: #A78BFA;
+    --purple-dark: #6D28D9;
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --card: #1a1a28;
+    --border: rgba(139,92,246,0.18);
+    --text: #f1f0ff;
+    --muted: #8b8aaa;
+    --green: #10B981;
+    --blue: #3B82F6;
+    --orange: #F59E0B;
+    --red: #EF4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+  }
+
+  /* ── Slideshow container ── */
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(60px);
+    transition: opacity .45s cubic-bezier(.4,0,.2,1), transform .45s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(0);
+  }
+
+  .slide.exit {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  /* ── Background decorations ── */
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .slide::after {
+    content: '';
+    position: absolute;
+    bottom: -150px; left: -150px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59,130,246,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── Navigation ── */
+  .nav {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+    background: rgba(18,18,26,0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 10px 20px;
+  }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    transition: color .2s, background .2s;
+    line-height: 1;
+  }
+  .nav-btn:hover { color: var(--purple-light); background: rgba(139,92,246,0.12); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .slide-counter {
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 60px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    cursor: pointer;
+    transition: background .2s, width .2s;
+    border: none;
+    padding: 0;
+  }
+  .dot.active { background: var(--purple); width: 20px; border-radius: 3px; }
+
+  /* ── Keyboard hint ── */
+  .hint {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.5;
+  }
+
+  /* ── Slide number badge ── */
+  .slide-num {
+    position: fixed;
+    top: 20px;
+    left: 24px;
+    font-size: 11px;
+    color: var(--purple);
+    font-weight: 600;
+    letter-spacing: .08em;
+  }
+
+  /* ── Typography ── */
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-size: clamp(36px, 5vw, 68px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #fff 0%, var(--purple-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  h2 {
+    font-size: clamp(24px, 3.5vw, 44px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #fff 30%, var(--purple-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 36px;
+  }
+
+  h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+
+  .subtitle {
+    font-size: clamp(15px, 2vw, 20px);
+    color: var(--muted);
+    margin-top: 12px;
+    max-width: 700px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* ── Cards & grids ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1100px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; width: 100%; max-width: 1100px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; width: 100%; max-width: 1100px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--purple), transparent);
+  }
+
+  .icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--purple-light);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .desc { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .badge-purple { background: rgba(139,92,246,0.15); color: var(--purple-light); border: 1px solid rgba(139,92,246,0.3); }
+  .badge-green  { background: rgba(16,185,129,0.12); color: #34D399; border: 1px solid rgba(16,185,129,0.25); }
+  .badge-blue   { background: rgba(59,130,246,0.12); color: #60A5FA; border: 1px solid rgba(59,130,246,0.25); }
+  .badge-orange { background: rgba(245,158,11,0.12); color: #FCD34D; border: 1px solid rgba(245,158,11,0.25); }
+  .badge-red    { background: rgba(239,68,68,0.12); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.25); }
+
+  /* ── Lists ── */
+  .check-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .check-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .check-list li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── Divider ── */
+  .divider { width: 48px; height: 3px; background: linear-gradient(90deg, var(--purple), var(--blue)); border-radius: 2px; margin: 14px 0; }
+
+  /* ── Timeline / flow ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 1000px;
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    text-align: center;
+  }
+  .flow-circle {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(139,92,246,0.15);
+    border: 2px solid var(--purple);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .flow-label { font-size: 12px; color: var(--muted); max-width: 90px; line-height: 1.3; }
+  .flow-time { font-size: 11px; font-weight: 700; color: var(--purple-light); }
+  .flow-arrow { font-size: 18px; color: var(--border); padding: 0 4px; margin-bottom: 24px; flex-shrink: 0; }
+
+  /* ── Role hierarchy ── */
+  .role-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+  .role-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .role-name { font-size: 14px; font-weight: 600; color: var(--text); min-width: 110px; }
+  .role-perms { font-size: 12px; color: var(--muted); flex: 1; }
+  .role-level { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .08em; }
+
+  /* ── Sync timing bars ── */
+  .timing-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .timing-label { font-size: 13px; color: var(--text); min-width: 200px; }
+  .timing-bar-wrap { flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+  .timing-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--purple), var(--blue)); }
+  .timing-val { font-size: 12px; font-weight: 700; color: var(--purple-light); min-width: 50px; text-align: right; }
+
+  /* ── Security items ── */
+  .sec-item {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+  .sec-icon { font-size: 22px; flex-shrink: 0; }
+  .sec-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .sec-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+  /* ── Stack badges ── */
+  .stack-wrap { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .stack-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .stack-pill span { font-size: 16px; }
+
+  /* ── Title slide specific ── */
+  .title-slide {
+    background: radial-gradient(ellipse at 20% 50%, rgba(139,92,246,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(59,130,246,0.08) 0%, transparent 50%);
+    text-align: center;
+  }
+
+  .logo {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, var(--purple-dark), var(--purple));
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 32px;
+    box-shadow: 0 20px 60px rgba(139,92,246,0.35);
+  }
+
+  .meta-row {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple); }
+
+  /* ── Wide content ── */
+  .wide { width: 100%; max-width: 1100px; }
+  .half { width: 100%; max-width: 1100px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+
+  /* ── Progress line (top) ── */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--purple), var(--blue));
+    border-radius: 0 2px 2px 0;
+    transition: width .4s cubic-bezier(.4,0,.2,1);
+    z-index: 200;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-num" id="slideNum">01 / 12</div>
+<div class="hint">← → Arrow keys · Space · Click</div>
+
+<div class="deck" id="deck">
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 1 — TITLE -->
+  <section class="slide title-slide active" id="slide-0">
+    <div class="logo">🎓</div>
+    <div class="tag">IIT Madras BS · Hostel Management System</div>
+    <h1>CampusOps</h1>
+    <p class="subtitle">A production-grade, full-stack platform managing hostels, attendance, inventory, lost &amp; found, and real-time staff coordination for 15,000–20,000 students.</p>
+    <div class="meta-row">
+      <div class="meta-item"><div class="meta-dot"></div> Expo React Native</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--blue)"></div> Express 5 API</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--green)"></div> PostgreSQL</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--orange)"></div> React Web Admin</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 2 — ARCHITECTURE -->
+  <section class="slide" id="slide-1">
+    <div class="tag">System Architecture</div>
+    <h2>Three-Tier Monorepo</h2>
+    <div class="grid-3">
+      <div class="card">
+        <span class="icon">📱</span>
+        <h3>Mobile App</h3>
+        <div class="desc">Expo SDK 55 · React Native · Expo Router v6<br/>Port 8099 · Web + Android + iOS</div>
+        <div class="divider"></div>
+        <ul class="check-list" style="font-size:12px;">
+          <li>Role-adaptive screens</li>
+          <li>Offline-first with AsyncStorage cache</li>
+          <li>Pull-to-refresh + auto-sync</li>
+          <li>React Query for data fetching</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:rgba(59,130,246,0.3)">
+        <span class="icon" style="background:none">⚙️</span>
+        <h3>API Server</h3>
+        <div class="desc">Express 5 · TypeScript · Drizzle ORM<br/>Port 8080 · Cluster mode</div>
+        <div class="divider" style="background:linear-gradient(90deg,var(--blue),transparent)"></div>
+        <ul class="check-list" style="font-size:12px;">
+          <li>JWT authentication</li>
+          <li>Role-based access control</li>
+          <li>gzip compression</li>
+          <li>Rate limiting (2000/15 min)</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:rgba(16,185,129,0.3)">
+        <span class="icon">🖥️</span>
+        <h3>Web Admin Portal</h3>
+        <div class="desc">React + Vite + Tailwind<br/>Port 5000 · Superadmin tools</div>
+        <div class="divider" style="background:linear-gradient(90deg,var(--green),transparent)"></div>
+        <ul class="check-list" style="font-size:12px;">
+          <li>Real-time dashboard</li>
+          <li>CSV / PDF export</li>
+          <li>Bulk import tools</li>
+          <li>Activity log monitoring</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack-wrap" style="margin-top:20px;justify-content:center;">
+      <div class="stack-pill"><span>🐘</span> PostgreSQL</div>
+      <div class="stack-pill"><span>🧩</span> Drizzle ORM</div>
+      <div class="stack-pill"><span>📦</span> pnpm Workspaces</div>
+      <div class="stack-pill"><span>🔷</span> TypeScript 5.9</div>
+      <div class="stack-pill"><span>✅</span> Zod Validation</div>
+      <div class="stack-pill"><span>🚄</span> Railway Deploy</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 3 — ROLE HIERARCHY -->
+  <section class="slide" id="slide-2">
+    <div class="tag">Access Control</div>
+    <h2>5-Level Role Hierarchy</h2>
+    <div class="wide">
+      <div class="role-row">
+        <div class="role-dot" style="background:#EF4444"></div>
+        <div class="role-name">🔴 Superadmin</div>
+        <div class="role-perms">Master table · CSV import · Full PDF/CSV exports · Activity logs · Manage all users · Password reset</div>
+        <div class="role-level">LEVEL 5</div>
+      </div>
+      <div class="role-row">
+        <div class="role-dot" style="background:#F59E0B"></div>
+        <div class="role-name">🟠 Admin</div>
+        <div class="role-perms">All hostel data · Export CSV · Revoke attendance · Manage staff · Lost &amp; found management</div>
+        <div class="role-level">LEVEL 4</div>
+      </div>
+      <div class="role-row">
+        <div class="role-dot" style="background:#8B5CF6"></div>
+        <div class="role-name">🟣 Coordinator</div>
+        <div class="role-perms">Manages multiple hostels · All volunteer features · Announcements · Staff status view</div>
+        <div class="role-level">LEVEL 3</div>
+      </div>
+      <div class="role-row">
+        <div class="role-dot" style="background:#3B82F6"></div>
+        <div class="role-name">🔵 Volunteer</div>
+        <div class="role-perms">Mark attendance · Inventory management · Mess card toggle · Global search · Staff status</div>
+        <div class="role-level">LEVEL 2</div>
+      </div>
+      <div class="role-row">
+        <div class="role-dot" style="background:#10B981"></div>
+        <div class="role-name">🟢 Student</div>
+        <div class="role-perms">View own hostel info · Lost &amp; found · Notifications · Own inventory status</div>
+        <div class="role-level">LEVEL 1</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 4 — SYNC TIMING -->
+  <section class="slide" id="slide-3">
+    <div class="tag">Real-Time Synchronisation</div>
+    <h2>How Fast Do Changes Sync?</h2>
+    <div class="wide">
+      <div class="timing-row">
+        <div class="timing-label">User profile (hostel assignment)</div>
+        <div class="timing-bar-wrap"><div class="timing-bar" style="width:20%"></div></div>
+        <div class="timing-val">≤ 20s</div>
+      </div>
+      <div class="timing-row">
+        <div class="timing-label">Student hostel info screen</div>
+        <div class="timing-bar-wrap"><div class="timing-bar" style="width:20%"></div></div>
+        <div class="timing-val">≤ 20s</div>
+      </div>
+      <div class="timing-row">
+        <div class="timing-label">Staff active/inactive status</div>
+        <div class="timing-bar-wrap"><div class="timing-bar" style="width:22%"></div></div>
+        <div class="timing-val">≤ 20s</div>
+      </div>
+      <div class="timing-row">
+        <div class="timing-label">Activity logs (web admin)</div>
+        <div class="timing-bar-wrap"><div class="timing-bar" style="width:22%"></div></div>
+        <div class="timing-val">≤ 20s</div>
+      </div>
+      <div class="timing-row">
+        <div class="timing-label">Attendance / inventory data</div>
+        <div class="timing-bar-wrap"><div class="timing-bar" style="width:30%"></div></div>
+        <div class="timing-val">≤ 30s</div>
+      </div>
+      <div class="timing-row">
+        <div class="timing-label">Student list (staff view)</div>
+        <div class="timing-bar-wrap"><div class="timing-bar" style="width:30%"></div></div>
+        <div class="timing-val">≤ 30s</div>
+      </div>
+      <div class="timing-row">
+        <div class="timing-label">Pull-to-refresh (manual)</div>
+        <div class="timing-bar-wrap"><div class="timing-bar" style="width:2%;background:linear-gradient(90deg,var(--green),#34D399)"></div></div>
+        <div class="timing-val" style="color:#34D399">Instant</div>
+      </div>
+      <div class="timing-row">
+        <div class="timing-label">Hostel list data</div>
+        <div class="timing-bar-wrap"><div class="timing-bar" style="width:60%;opacity:0.5"></div></div>
+        <div class="timing-val">≤ 60s</div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+        <div class="badge badge-green">✓ Auto-refresh background polling</div>
+        <div class="badge badge-purple">✓ Pull-to-refresh also syncs profile</div>
+        <div class="badge badge-blue">✓ Staff heartbeat every 5 min</div>
+        <div class="badge badge-orange">✓ Staff auto-inactive after 10 min</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 5 — HOSTEL ASSIGNMENT FLOW -->
+  <section class="slide" id="slide-4">
+    <div class="tag">Data Flow</div>
+    <h2>Hostel Assignment → App Update</h2>
+    <div class="flow wide" style="margin-bottom:32px;">
+      <div class="flow-step">
+        <div class="flow-circle">🖥️</div>
+        <div class="flow-label">Admin opens Web Portal</div>
+        <div class="flow-time">t = 0</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle">📝</div>
+        <div class="flow-label">Assigns student/staff to hostel</div>
+        <div class="flow-time">PATCH /api/staff/:id/hostel</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle">🗄️</div>
+        <div class="flow-label">PostgreSQL updated (hostelId + assignedHostelIds)</div>
+        <div class="flow-time">&lt; 100ms</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle">🔄</div>
+        <div class="flow-label">Mobile polls GET /auth/me every 20s</div>
+        <div class="flow-time">≤ 20s</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle">📱</div>
+        <div class="flow-label">App auto-selects new hostel &amp; loads students</div>
+        <div class="flow-time">Instant (React state)</div>
+      </div>
+    </div>
+    <div class="grid-2" style="max-width:900px;">
+      <div class="card">
+        <h3>Smart Auto-Select Logic</h3>
+        <div class="desc" style="margin-top:8px;">If the volunteer's currently selected hostel is no longer in their assigned list (stale), the app automatically snaps to their new primary hostel — no manual action needed.</div>
+      </div>
+      <div class="card">
+        <h3>Offline Fallback</h3>
+        <div class="desc" style="margin-top:8px;">Last known user profile and all GET responses are cached in AsyncStorage. If the network drops, the app stays functional using the cached data.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 6 — KEY FEATURES -->
+  <section class="slide" id="slide-5">
+    <div class="tag">Core Features</div>
+    <h2>What CampusOps Does</h2>
+    <div class="grid-4">
+      <div class="card">
+        <span class="icon">✅</span>
+        <h3>Attendance</h3>
+        <div class="desc">Campus In/Out status · Check-in/out timestamps · Hostel-scoped per volunteer</div>
+      </div>
+      <div class="card">
+        <span class="icon">🛏️</span>
+        <h3>Inventory</h3>
+        <div class="desc">Mattress · Bedsheet · Pillow tracking per student. One-way lock — submit permanently seals record</div>
+      </div>
+      <div class="card">
+        <span class="icon">🍽️</span>
+        <h3>Mess Card</h3>
+        <div class="desc">Per-student "Card Given / Not Given" toggle. Replaces complex meal-by-meal tables</div>
+      </div>
+      <div class="card">
+        <span class="icon">🔍</span>
+        <h3>Global Search</h3>
+        <div class="desc">Search by name · roll number · room across all hostels. Full student profile modal on tap</div>
+      </div>
+      <div class="card">
+        <span class="icon">📡</span>
+        <h3>Staff Status</h3>
+        <div class="desc">Go Active / Inactive with remark. Auto-inactive after 10 min of inactivity. Live badge on all views</div>
+      </div>
+      <div class="card">
+        <span class="icon">📋</span>
+        <h3>Activity Logs</h3>
+        <div class="desc">Real-time 20s polling · Filter by type · Search by name · PDF + CSV export</div>
+      </div>
+      <div class="card">
+        <span class="icon">🔔</span>
+        <h3>Lost &amp; Found</h3>
+        <div class="desc">Any authenticated user can report items with location. Admins manage status</div>
+      </div>
+      <div class="card">
+        <span class="icon">📥</span>
+        <h3>CSV Import</h3>
+        <div class="desc">Bulk import students · mess allocation · hostel assignments · staff. Download templates</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 7 — INVENTORY LOCK FLOW -->
+  <section class="slide" id="slide-6">
+    <div class="tag">Attendance &amp; Inventory</div>
+    <h2>The Card Flow — 5 Steps</h2>
+    <div class="flow wide" style="margin-bottom:32px;">
+      <div class="flow-step">
+        <div class="flow-circle" style="border-color:var(--blue)">📍</div>
+        <div class="flow-label">1. Campus In / Out pill toggle</div>
+        <div class="flow-time">entered / not_entered</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle" style="border-color:var(--purple)">🟣</div>
+        <div class="flow-label">2. Check In → purple timestamp</div>
+        <div class="flow-time">Recorded in DB</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle" style="border-color:var(--green)">📦</div>
+        <div class="flow-label">3. Inventory checkboxes (Mattress / Bedsheet / Pillow)</div>
+        <div class="flow-time">Editable until lock</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle" style="border-color:var(--orange)">🟠</div>
+        <div class="flow-label">4. Check Out → orange timestamp</div>
+        <div class="flow-time">Recorded in DB</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle" style="border-color:var(--red)">🔒</div>
+        <div class="flow-label">5. Submit → permanently locks inventory</div>
+        <div class="flow-time">Cannot be undone</div>
+      </div>
+    </div>
+    <div class="grid-2" style="max-width:900px;">
+      <div class="card">
+        <h3>🔒 Inventory Lock is Enforced Twice</h3>
+        <div class="desc" style="margin-top:8px;"><strong style="color:var(--text)">Server-side:</strong> PATCH /inventory returns HTTP 403 if <code style="color:var(--purple-light)">inventoryLocked = true</code> — no client can bypass it.<br/><br/><strong style="color:var(--text)">Client-side:</strong> Checkboxes and Submit button are hidden/disabled once locked.</div>
+      </div>
+      <div class="card">
+        <h3>📊 Who Can Do What</h3>
+        <div class="desc" style="margin-top:8px;">
+          Volunteer: mark for their hostel's students only<br/>
+          Coordinator: mark for all assigned hostels<br/>
+          Admin/Superadmin: view &amp; revoke from web admin<br/>
+          Once submitted — locked forever, lockedBy + lockedAt stored
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 8 — SECURITY -->
+  <section class="slide" id="slide-7">
+    <div class="tag">Security</div>
+    <h2>Security Architecture</h2>
+    <div class="half">
+      <div>
+        <div class="sec-item">
+          <div class="sec-icon">🔑</div>
+          <div>
+            <div class="sec-title">JWT Authentication</div>
+            <div class="sec-desc">Every request must carry a signed JWT token. Tokens are verified server-side on every route via requireAuth middleware. No session storage — stateless.</div>
+          </div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-icon">🛡️</div>
+          <div>
+            <div class="sec-title">Role-Based Access Control (RBAC)</div>
+            <div class="sec-desc">requireStudent / requireVolunteer / requireAdmin / requireSuperAdmin middleware gates every API route. Role is read from the DB on each request, not trusted from the token payload alone.</div>
+          </div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-icon">🏠</div>
+          <div>
+            <div class="sec-title">Hostel-Scoped Data</div>
+            <div class="sec-desc">Volunteers can only read/write students in their assigned hostel. Coordinators are scoped to their assigned hostel list. Cross-hostel data access is blocked at the query level.</div>
+          </div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-icon">🚦</div>
+          <div>
+            <div class="sec-title">Rate Limiting</div>
+            <div class="sec-desc">General: 2,000 requests / 15 min per IP. Auth endpoints: 50 requests / 15 min. Prevents brute-force login attacks and API abuse.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-item">
+          <div class="sec-icon">🔒</div>
+          <div>
+            <div class="sec-title">Inventory Lock (Write-Once)</div>
+            <div class="sec-desc">Once submitted, inventory records are permanently locked. Server returns HTTP 403 on any PATCH attempt — no client-side workaround possible.</div>
+          </div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-icon">📸</div>
+          <div>
+            <div class="sec-title">Screenshot Detection Logging</div>
+            <div class="sec-desc">Android screenshot listener fires on any screen capture. Event is immediately logged to the activity log with the user's name, email, and timestamp — visible to superadmin in real time.</div>
+          </div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-icon">📤</div>
+          <div>
+            <div class="sec-title">File Upload Limits</div>
+            <div class="sec-desc">Multer enforces 5 MB max on CSV imports. Only multipart/form-data accepted for file routes. Server validates CSV format and rejects malformed rows with detailed error messages.</div>
+          </div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-icon">🌐</div>
+          <div>
+            <div class="sec-title">mTLS Proxy (Replit)</div>
+            <div class="sec-desc">All traffic to the dev server is proxied through Replit's mTLS gateway. Production runs on Railway with HTTPS enforced. Trust proxy enabled for accurate IP rate limiting.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 9 — EXPORTS & REPORTS -->
+  <section class="slide" id="slide-8">
+    <div class="tag">Reports &amp; Exports</div>
+    <h2>Data Export Capabilities</h2>
+    <div class="grid-2" style="max-width:900px;">
+      <div class="card">
+        <span class="icon">📄</span>
+        <h3>PDF Reports (Superadmin)</h3>
+        <div class="divider"></div>
+        <ul class="check-list">
+          <li>Student directory PDF</li>
+          <li>Attendance report by date</li>
+          <li>Staff activity logs PDF</li>
+          <li>Full campus report (combined)</li>
+        </ul>
+        <div style="margin-top:14px;" class="badge badge-red">🔴 Superadmin only</div>
+      </div>
+      <div class="card">
+        <span class="icon">📊</span>
+        <h3>CSV Exports (Admin+)</h3>
+        <div class="divider" style="background:linear-gradient(90deg,var(--green),transparent)"></div>
+        <ul class="check-list">
+          <li>Students export (searchable)</li>
+          <li>Attendance by date</li>
+          <li>Inventory status export</li>
+          <li>Full report CSV</li>
+          <li>Activity logs CSV (timelogs)</li>
+        </ul>
+        <div style="margin-top:14px;" class="badge badge-orange">🟠 Admin+ access</div>
+      </div>
+    </div>
+    <div class="grid-2" style="max-width:900px;margin-top:16px;">
+      <div class="card">
+        <span class="icon">📥</span>
+        <h3>CSV Imports (Superadmin)</h3>
+        <div class="desc" style="margin-top:8px;">Bulk import students · mess allocations · hostel assignments · staff (with optional purge of existing staff). Download template CSVs from the admin portal.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🔧</span>
+        <h3>Server-Side Generation</h3>
+        <div class="desc" style="margin-top:8px;">PDFs generated with pdfkit on the Express server. CSVs streamed directly from PostgreSQL queries. No client-side rendering — exports work even on slow devices.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 10 — PERFORMANCE -->
+  <section class="slide" id="slide-9">
+    <div class="tag">Performance &amp; Scale</div>
+    <h2>Built for 15,000–20,000 Users</h2>
+    <div class="grid-4">
+      <div class="card" style="text-align:center;">
+        <div class="label">DB Pool</div>
+        <div class="value">20</div>
+        <div class="desc">Max connections (min 2)</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="label">Rate Limit</div>
+        <div class="value">2K</div>
+        <div class="desc">Requests per 15 min / IP</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="label">Page Size</div>
+        <div class="value">60</div>
+        <div class="desc">Students per page load</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="label">Timeout</div>
+        <div class="value">15s</div>
+        <div class="desc">Per API request + 1 retry</div>
+      </div>
+    </div>
+    <div class="grid-3" style="margin-top:16px;max-width:1100px;">
+      <div class="card">
+        <h3>⚡ gzip Compression</h3>
+        <div class="desc" style="margin-top:8px;">All API responses compressed with the compression middleware. Dramatically reduces payload size for large student lists and reports over mobile networks.</div>
+      </div>
+      <div class="card">
+        <h3>🔄 Cluster Mode</h3>
+        <div class="desc" style="margin-top:8px;">Express server runs in Node.js cluster mode. Worker processes share the port, enabling multi-core CPU utilisation on the server without any code changes.</div>
+      </div>
+      <div class="card">
+        <h3>📦 Pagination</h3>
+        <div class="desc" style="margin-top:8px;">All list endpoints are paginated with limit + offset. Infinite scroll on mobile — next page loads automatically as the user scrolls near the end of the list.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 11 — DEPLOYMENT -->
+  <section class="slide" id="slide-10">
+    <div class="tag">Deployment</div>
+    <h2>Production Environments</h2>
+    <div class="half">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <span class="icon">🚄</span>
+          <h3>API + Web Admin — Railway</h3>
+          <div class="divider"></div>
+          <ul class="check-list">
+            <li>Auto-deploy on git push</li>
+            <li>HTTPS enforced</li>
+            <li>Health check endpoint at /health</li>
+            <li>Environment variables managed by Railway</li>
+          </ul>
+          <div style="margin-top:12px;font-size:11px;color:var(--muted);font-family:monospace;word-break:break-all;">campusops-api-production.up.railway.app</div>
+        </div>
+        <div class="card">
+          <span class="icon">📱</span>
+          <h3>Mobile App — Expo EAS</h3>
+          <div class="divider"></div>
+          <ul class="check-list">
+            <li>EAS Build for APK / IPA</li>
+            <li>OTA updates via eas update (JS-only)</li>
+            <li>No app store resubmission for logic changes</li>
+            <li>EXPO_PUBLIC_API_URL targets production</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <span class="icon">🗄️</span>
+          <h3>Database — PostgreSQL</h3>
+          <div class="divider" style="background:linear-gradient(90deg,var(--blue),transparent)"></div>
+          <ul class="check-list">
+            <li>Drizzle ORM migrations on startup</li>
+            <li>Schema auto-applied — zero manual migration steps</li>
+            <li>Demo data seeded on first boot (AUTO_SEED=true)</li>
+            <li>DATABASE_URL secret managed by platform</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="icon">🌐</span>
+          <h3>Dev Environment — Replit</h3>
+          <div class="divider" style="background:linear-gradient(90deg,var(--green),transparent)"></div>
+          <ul class="check-list">
+            <li>3 parallel workflows (API · Web · Mobile)</li>
+            <li>Hot-reload for web admin (Vite HMR)</li>
+            <li>Metro bundler for mobile (CI mode)</li>
+            <li>mTLS proxy for HTTPS preview</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SLIDE 12 — SUMMARY -->
+  <section class="slide title-slide" id="slide-11">
+    <div class="logo" style="background:linear-gradient(135deg,var(--green),var(--blue))">✅</div>
+    <div class="tag">Summary</div>
+    <h1 style="font-size:clamp(28px,4vw,52px)">Production-Ready Platform</h1>
+    <div class="grid-4" style="margin-top:36px;max-width:1100px;text-align:left;">
+      <div class="card" style="text-align:center;">
+        <div class="value" style="font-size:36px;">5</div>
+        <div class="label">User Roles</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="value" style="font-size:36px;">20s</div>
+        <div class="label">Max Sync Delay</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="value" style="font-size:36px;">20K</div>
+        <div class="label">Concurrent Users</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="value" style="font-size:36px;">8+</div>
+        <div class="label">Security Layers</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;justify-content:center;">
+      <div class="badge badge-purple">📱 Cross-platform Mobile</div>
+      <div class="badge badge-green">🔒 Write-once Inventory Lock</div>
+      <div class="badge badge-blue">⚡ Real-time Polling</div>
+      <div class="badge badge-orange">📸 Screenshot Detection</div>
+      <div class="badge badge-red">📊 PDF + CSV Exports</div>
+      <div class="badge badge-purple">🔄 OTA Mobile Updates</div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Navigation -->
+<nav class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="go(-1)" disabled>&#8592;</button>
+  <div class="dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 12</span>
+  <button class="nav-btn" id="nextBtn" onclick="go(1)">&#8594;</button>
+</nav>
+
+<script>
+  const TOTAL = 12;
+  let cur = 0;
+  let animating = false;
+
+  const slides = document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  const slideNum = document.getElementById('slideNum');
+  const progressBar = document.getElementById('progressBar');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  // Build dots
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('button');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    d.title = 'Slide ' + (i + 1);
+    dotsEl.appendChild(d);
+  }
+
+  function update() {
+    const pct = TOTAL === 1 ? 100 : (cur / (TOTAL - 1)) * 100;
+    progressBar.style.width = pct + '%';
+    counter.textContent = (cur + 1) + ' / ' + TOTAL;
+    slideNum.textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0');
+    prevBtn.disabled = cur === 0;
+    nextBtn.disabled = cur === TOTAL - 1;
+    dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+  }
+
+  function goTo(idx) {
+    if (animating || idx === cur || idx < 0 || idx >= TOTAL) return;
+    animating = true;
+
+    const prev = slides[cur];
+    const next = slides[idx];
+
+    const dir = idx > cur ? 1 : -1;
+
+    prev.classList.add('exit');
+    prev.classList.remove('active');
+
+    // Reverse entry direction
+    next.style.transform = `translateX(${dir * 60}px)`;
+    next.style.opacity = '0';
+    next.style.pointerEvents = 'none';
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        next.style.transition = 'opacity .45s cubic-bezier(.4,0,.2,1), transform .45s cubic-bezier(.4,0,.2,1)';
+        next.style.transform = 'translateX(0)';
+        next.style.opacity = '1';
+        next.classList.add('active');
+      });
+    });
+
+    setTimeout(() => {
+      prev.classList.remove('exit');
+      prev.style.transform = '';
+      prev.style.opacity = '';
+      prev.style.transition = '';
+      next.style.pointerEvents = '';
+      next.style.transition = '';
+      animating = false;
+    }, 480);
+
+    cur = idx;
+    update();
+  }
+
+  function go(dir) { goTo(cur + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); go(-1); }
+    if (e.key === 'Home') goTo(0);
+    if (e.key === 'End') goTo(TOTAL - 1);
+  });
+
+  // Touch swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+  });
+
+  update();
+</script>
+</body>
+</html>
