@@ -57,7 +57,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/web-admin && PORT=5000 API_TARGET=http://localhost:8080 pnpm dev"
+args = "cd artifacts/web-admin && PORT=5000 API_TARGET=https://campusops.up.railway.app pnpm dev"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -98,7 +98,3 @@ EXPO_PUBLIC_API_URL = "https://campusops-api-production.up.railway.app/api"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 8099
-externalPort = 8099
