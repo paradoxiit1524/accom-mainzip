@@ -16,8 +16,12 @@ const maybeInit = process.env.DATABASE_URL
     );
 
 maybeInit.then(() => {
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`[Server] Listening on port ${PORT}`);
+  });
+
+  server.on("error", (err: Error) => {
+    console.error("[Server] Error:", err.message);
   });
 
   if (SHOULD_AUTO_SEED) {
@@ -29,4 +33,18 @@ maybeInit.then(() => {
       console.error("[prod-seed] Failed:", err)
     );
   }
+
+  // Keep the event loop alive so the process never exits on its own
+  const _keepAlive = setInterval(() => {}, 30_000);
+
+  process.on("SIGTERM", () => {
+    console.log("[Server] SIGTERM received, shutting down gracefully...");
+    clearInterval(_keepAlive);
+    server.close(() => process.exit(0));
+  });
+
+  process.on("SIGINT", () => {
+    clearInterval(_keepAlive);
+    server.close(() => process.exit(0));
+  });
 });

@@ -1,9 +1,13 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { PageHeader, Card, Table, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
 import { ClipboardCheck, Download, RefreshCw, CheckCircle, XCircle, UserPlus, Search, X, Calendar, CalendarDays } from "lucide-react";
+
 import { format } from "date-fns";
+
+const COORD_UP = ["coordinator", "admin", "superadmin"];
 
 function fmt(ts?: string | null) {
   if (!ts) return "—";
@@ -121,10 +125,12 @@ function CheckInModal({ visible, onClose, hostels, onSuccess }: { visible: boole
 
 export default function Attendance() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isRestricted = !COORD_UP.includes(user?.role || "");
   const today = format(new Date(), "yyyy-MM-dd");
   const [date, setDate] = useState(today);
   const [allDates, setAllDates] = useState(false);
-  const [hostelFilter, setHostelFilter] = useState("");
+  const [hostelFilter, setHostelFilter] = useState(isRestricted ? (user?.hostelId || "") : "");
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
 
   const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels") });
@@ -218,7 +224,7 @@ export default function Attendance() {
             />
           )}
 
-          <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40">
+          <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40" disabled={isRestricted}>
             <option value="">All Hostels</option>
             {hostels.map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </Select>

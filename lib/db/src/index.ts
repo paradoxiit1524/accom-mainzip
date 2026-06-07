@@ -20,9 +20,9 @@ export const pool = new Pool({
   ssl: needsSsl(connectionString) ? { rejectUnauthorized: false } : false,
   max: 20,
   min: 2,
-  idleTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
-  allowExitOnIdle: true,
+  allowExitOnIdle: false,
 });
 
 pool.on("error", (err) => {

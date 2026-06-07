@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useLiveSync } from "@/hooks/useLiveSync";
-import Layout, { type Page } from "@/components/Layout";
+import Layout, { type Page, NAV } from "@/components/Layout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Students from "@/pages/Students";
@@ -59,6 +59,16 @@ function AppInner() {
 
 function AuthenticatedApp({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
   useLiveSync();
+  const { user } = useAuth();
+  const role = user?.role || "";
+
+  useEffect(() => {
+    const navItem = NAV.find(n => n.id === page);
+    if (navItem?.roles && !navItem.roles.includes(role)) {
+      setPage("dashboard");
+    }
+  }, [page, role, setPage]);
+
   const PageComponent = PAGES[page] || Dashboard;
 
   return (

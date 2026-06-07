@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { PageHeader, Card, Table, Input, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
 import { Package, Download, RefreshCw, Search, Lock, Unlock } from "lucide-react";
+
+const COORD_UP = ["coordinator", "admin", "superadmin"];
 
 function ItemDot({ given, submitted }: { given: boolean; submitted: boolean }) {
   if (submitted) return <span className="inline-flex items-center gap-1 text-xs text-green-400"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />Submitted</span>;
@@ -12,7 +15,9 @@ function ItemDot({ given, submitted }: { given: boolean; submitted: boolean }) {
 
 export default function Inventory() {
   const qc = useQueryClient();
-  const [hostelFilter, setHostelFilter] = useState("");
+  const { user } = useAuth();
+  const isRestricted = !COORD_UP.includes(user?.role || "");
+  const [hostelFilter, setHostelFilter] = useState(isRestricted ? (user?.hostelId || "") : "");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -87,7 +92,7 @@ export default function Inventory() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <Input value={search} onChange={setSearch} placeholder="Search by name, roll, room…" className="pl-9" />
           </div>
-          <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40">
+          <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40" disabled={isRestricted}>
             <option value="">All Hostels</option>
             {(hostels as any[]).map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </Select>

@@ -45,7 +45,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/mobile && EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=https://f92ca1b9-1262-425b-86f9-4ab60e8e63f0-00-1e5smgthwykj9.sisko.replit.dev/api pnpm exec expo start --web --port 8099 --host lan"
+args = "cd artifacts/mobile && EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=https://campusops.up.railway.app/api pnpm exec expo start --web --port 8099 --host lan"
 waitForPort = 8099
 
 [[workflows.workflow]]
@@ -70,7 +70,6 @@ outputType = "console"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd artifacts/api-server && NODE_ENV=development AUTO_SEED=true pnpm exec tsx ./src/dev.ts"
-waitForPort = 8080
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
@@ -93,8 +92,12 @@ AUTO_SEED = "true"
 SEED_REAL_DATA = "false"
 JWT_SECRET = "f6abfd33b3d2b80c0f5f95a966c729a4a4475f307bd087b3a77911a4c4924327"
 API_TARGET = "https://campusops-api-production.up.railway.app"
-EXPO_PUBLIC_API_URL = "https://campusops-api-production.up.railway.app/api"
+EXPO_PUBLIC_API_URL = "https://campusops.up.railway.app/api"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 8099
+externalPort = 8099

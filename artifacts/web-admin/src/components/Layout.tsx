@@ -16,12 +16,12 @@ export type Page =
 const COORD_UP = ["coordinator", "admin", "superadmin"];
 const ADMIN_UP = ["admin", "superadmin"];
 
-const NAV: { id: Page; label: string; icon: React.ElementType; roles?: string[] }[] = [
+export const NAV: { id: Page; label: string; icon: React.ElementType; roles?: string[] }[] = [
   { id: "dashboard",     label: "Dashboard",      icon: LayoutDashboard },
   { id: "attendance",    label: "Attendance",      icon: ClipboardCheck },
   { id: "mess",          label: "Mess Cards",      icon: UtensilsCrossed },
   { id: "inventory",     label: "Inventory",       icon: Package },
-  { id: "activity-logs", label: "Activity Logs",   icon: Activity },
+  { id: "activity-logs", label: "Activity Logs",   icon: Activity,    roles: [...COORD_UP] },
   { id: "students",      label: "Students",        icon: Users,       roles: [...COORD_UP] },
   { id: "hostels",       label: "Hostels",         icon: Building2,   roles: [...COORD_UP] },
   { id: "staff",         label: "Staff",           icon: UserCog,     roles: [...COORD_UP] },

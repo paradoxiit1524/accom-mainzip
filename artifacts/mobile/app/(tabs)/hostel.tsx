@@ -122,11 +122,17 @@ const StudentDetailModal = memo(function StudentDetailModal({
 
           {/* Academic */}
           <Section title="ACADEMIC INFO" icon="book-open" theme={theme}>
+            {student.messCardNo ? (
+              <View style={{ marginBottom: 10, padding: 12, borderRadius: 12, backgroundColor: "#7c3aed20", borderWidth: 1, borderColor: "#7c3aed60", alignItems: "center" }}>
+                <Text style={{ fontSize: 11, color: "#a78bfa", fontFamily: "Inter_600SemiBold", letterSpacing: 1, marginBottom: 2 }}>MESS CARD NUMBER</Text>
+                <Text style={{ fontSize: 22, color: "#c4b5fd", fontFamily: "Inter_700Bold", letterSpacing: 2 }}>{student.messCardNo}</Text>
+              </View>
+            ) : null}
             <InfoGrid rows={[
               { label: "Gender", value: student.gender || "—" },
               { label: "Age", value: student.age || "—" },
               { label: "Programme", value: student.dsEs || "—" },
-              { label: "Mess Card", value: student.messCard ? "Issued" : "Not Issued", color: student.messCard ? "#22c55e" : undefined },
+              { label: "Card Status", value: student.messCard ? "Issued" : "Not Issued", color: student.messCard ? "#22c55e" : undefined },
             ]} theme={theme} />
             {student.remarks ? (
               <View style={{ marginTop: 8, padding: 8, borderRadius: 8, backgroundColor: theme.tint + "10" }}>

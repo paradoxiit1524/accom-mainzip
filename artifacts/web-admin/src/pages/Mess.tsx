@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { PageHeader, Card, Table, Input, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
 import { UtensilsCrossed, Download, RefreshCw, Search, CheckCircle, XCircle, Clock } from "lucide-react";
+
+const COORD_UP = ["coordinator", "admin", "superadmin"];
 
 function fmtTime(ts?: string | null) {
   if (!ts) return "—";
@@ -11,7 +14,9 @@ function fmtTime(ts?: string | null) {
 
 export default function Mess() {
   const qc = useQueryClient();
-  const [hostelFilter, setHostelFilter] = useState("");
+  const { user } = useAuth();
+  const isRestricted = !COORD_UP.includes(user?.role || "");
+  const [hostelFilter, setHostelFilter] = useState(isRestricted ? (user?.hostelId || "") : "");
   const [search, setSearch] = useState("");
   const [toggling, setToggling] = useState<string | null>(null);
 
@@ -83,7 +88,7 @@ export default function Mess() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <Input value={search} onChange={setSearch} placeholder="Search by name, roll, room…" className="pl-9" />
           </div>
-          <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40">
+          <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40" disabled={isRestricted}>
             <option value="">All Hostels</option>
             {(hostels as any[]).map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </Select>

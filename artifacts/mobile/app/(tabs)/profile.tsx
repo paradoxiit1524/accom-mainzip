@@ -125,6 +125,7 @@ export default function ProfileScreen() {
     ...(isStudent ? [
       { icon: "home", label: "Room", val: profile?.roomNumber },
       { icon: "coffee", label: "Mess", val: profile?.assignedMess },
+      { icon: "credit-card", label: "Mess Card No.", val: profile?.messCardNo, highlight: true },
     ] : []),
     ...(!isStudent ? [
       { icon: "home", label: isSuperAdmin ? "Hostel Scope" : "Assigned Hostel", val: resolvedAssignedHostelValue, managed: true, alwaysShow: true },
@@ -178,6 +179,15 @@ export default function ProfileScreen() {
         <Text style={[styles.cardTitle, { color: theme.text }]}>Account Info</Text>
         {accountRows
           .map((r) => (
+            r.highlight && r.val ? (
+              <View key={r.label} style={{ marginVertical: 6, padding: 14, borderRadius: 14, backgroundColor: "#7c3aed22", borderWidth: 1.5, borderColor: "#7c3aed55", alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <Feather name="credit-card" size={13} color="#a78bfa" />
+                  <Text style={{ fontSize: 11, color: "#a78bfa", fontFamily: "Inter_600SemiBold", letterSpacing: 1 }}>MESS CARD NUMBER</Text>
+                </View>
+                <Text style={{ fontSize: 28, color: "#c4b5fd", fontFamily: "Inter_700Bold", letterSpacing: 3 }}>{r.val}</Text>
+              </View>
+            ) : (
             <View
               key={r.label}
               style={[
@@ -197,6 +207,7 @@ export default function ProfileScreen() {
               </View>
               <Text style={[styles.infoValue, { color: theme.text }]}>{r.val || "Not assigned yet"}</Text>
             </View>
+            )
           ))}
         {!isStudent && (
           <View style={[styles.managedNote, { borderTopColor: theme.border }]}>

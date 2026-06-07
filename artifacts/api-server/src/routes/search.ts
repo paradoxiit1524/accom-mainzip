@@ -34,10 +34,12 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
     rollNumber: usersTable.rollNumber,
     phone: usersTable.phone,
     contactNumber: usersTable.contactNumber,
+    gender: usersTable.gender,
     area: usersTable.area,
     hostelId: usersTable.hostelId,
     roomNumber: usersTable.roomNumber,
     assignedMess: usersTable.assignedMess,
+    messCardNo: usersTable.messCardNo,
     attendanceStatus: usersTable.attendanceStatus,
     isActive: usersTable.isActive,
   }).from(usersTable);
@@ -69,7 +71,8 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
     (u.assignedMess || "").toLowerCase().includes(q) ||
     (u.area || "").toLowerCase().includes(q) ||
     (u.phone || "").toLowerCase().includes(q) ||
-    (u.contactNumber || "").toLowerCase().includes(q)
+    (u.contactNumber || "").toLowerCase().includes(q) ||
+    (u.messCardNo || "").toLowerCase().includes(q)
   );
 
   const total = filtered.length;

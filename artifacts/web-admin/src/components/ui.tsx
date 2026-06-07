@@ -92,19 +92,21 @@ export function Input({
 }
 
 export function Select({
-  value, onChange, children, className,
+  value, onChange, children, className, disabled,
 }: {
   value: string;
   onChange: (v: string) => void;
   children: React.ReactNode;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
       className={cn(
-        "bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none focus:border-purple-500/60 transition-all",
+        "bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none focus:border-purple-500/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
         className,
       )}
     >

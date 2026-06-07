@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getToken } from "@/lib/api";
+import { API_BASE, getToken } from "@/lib/api";
 
 const EVENT_KEYS: Record<string, string[][]> = {
   attendance_update: [["all-attendance"], ["att-stats"], ["attendance-stats"], ["active-staff"]],
-  inventory_update:  [["inventory-all"], ["history-inventory"], ["all-attendance"]],
+  inventory_update:  [["inventory-all"], ["history-inventory"], ["all-attendance"], ["mess-students"], ["inv-students"]],
   checkin_update:    [["checkins"], ["history-checkins"], ["att-stats"]],
   student_update:    [["all-students"], ["master-table"]],
   staff_update:      [["all-staff"], ["active-staff"], ["reports-summary"]],
@@ -25,7 +25,8 @@ export function useLiveSync() {
       const token = getToken();
       if (!token) return;
 
-      const es = new EventSource(`/api/events?token=${encodeURIComponent(token)}`);
+      const eventsUrl = `${API_BASE}/events?token=${encodeURIComponent(token)}`;
+      const es = new EventSource(eventsUrl);
       esRef.current = es;
 
       for (const [event, keyGroups] of Object.entries(EVENT_KEYS)) {
