@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CampusOps",
-    "slug": "hello-boss",
+    "slug": "kaludon-wwcd4ygpumjgkck8yinbh",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -68,12 +68,12 @@
         "headOrigin": "https://localhost"
       },
       "eas": {
-        "projectId": "8342dab5-e45c-447c-a10e-42eb9cd5aab0"
+        "projectId": "4a98a9ca-c01f-422c-b018-410d28173921"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "hacktheskill"
+    "owner": "karzo1313"
   }
 }
