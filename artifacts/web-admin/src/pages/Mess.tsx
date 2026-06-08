@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, Card, Table, Input, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
-import { UtensilsCrossed, Download, RefreshCw, Search, CheckCircle, XCircle, Clock } from "lucide-react";
+import { UtensilsCrossed, Download, RefreshCw, Search, CheckCircle, XCircle, CreditCard } from "lucide-react";
 
 const COORD_UP = ["coordinator", "admin", "superadmin"];
 
@@ -25,12 +25,19 @@ export default function Mess() {
     queryFn: () => apiFetch<any[]>("/hostels"),
   });
 
-  const { data: students = [], isLoading, refetch } = useQuery<any[]>({
+  const { data: raw, isLoading, refetch } = useQuery<any>({
     queryKey: ["mess-students", hostelFilter],
-    queryFn: () => apiFetch<any[]>(`/attendance${hostelFilter ? `?hostelId=${hostelFilter}` : ""}`),
+    queryFn: () => {
+      const params = new URLSearchParams({ limit: "10000", offset: "0" });
+      if (hostelFilter) params.set("hostelId", hostelFilter);
+      return apiFetch<any>(`/students?${params}`);
+    },
     refetchInterval: 30000,
     staleTime: 20000,
+    refetchOnWindowFocus: true,
   });
+
+  const students: any[] = Array.isArray(raw) ? raw : (raw?.students || raw?.data || []);
 
   const toggleMut = useMutation({
     mutationFn: ({ studentId, messCard }: { studentId: string; messCard: boolean }) =>
@@ -39,7 +46,7 @@ export default function Mess() {
     onSettled: () => setToggling(null),
   });
 
-  const given = students.filter((s: any) => s.inventory?.messCard).length;
+  const given = students.filter((s: any) => s.messCard).length;
   const notGiven = students.length - given;
 
   const filtered = students.filter((s: any) => {
@@ -47,14 +54,15 @@ export default function Mess() {
     const q = search.toLowerCase();
     return (s.name || "").toLowerCase().includes(q) ||
       (s.rollNumber || "").toLowerCase().includes(q) ||
-      (s.roomNumber || "").toLowerCase().includes(q);
+      (s.roomNumber || "").toLowerCase().includes(q) ||
+      (s.messCardNo || "").toLowerCase().includes(q);
   });
 
   return (
     <div className="fade-in">
       <PageHeader
         title="Mess Cards"
-        subtitle="Assign or revoke mess cards for students"
+        subtitle="Assign or revoke mess cards — serial numbers from master CSV"
         action={
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => downloadFile("/export/inventory.csv", "mess-inventory.csv")}>
@@ -68,7 +76,7 @@ export default function Mess() {
         {[
           { label: "Card Given", value: given, icon: CheckCircle, color: "text-green-400 bg-green-500/15" },
           { label: "Card Not Given", value: notGiven, icon: XCircle, color: "text-red-400 bg-red-500/15" },
-          { label: "Total Students", value: students.length, icon: Clock, color: "text-purple-400 bg-purple-500/15" },
+          { label: "Total Students", value: students.length, icon: CreditCard, color: "text-purple-400 bg-purple-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="p-4 flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
@@ -86,7 +94,7 @@ export default function Mess() {
         <div className="p-4 border-b border-white/8 flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-48">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-            <Input value={search} onChange={setSearch} placeholder="Search by name, roll, room…" className="pl-9" />
+            <Input value={search} onChange={setSearch} placeholder="Search by name, roll, room, card no…" className="pl-9" />
           </div>
           <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40" disabled={isRestricted}>
             <option value="">All Hostels</option>
@@ -103,14 +111,13 @@ export default function Mess() {
         ) : filtered.length === 0 ? (
           <EmptyState icon={UtensilsCrossed} title="No students found" sub="Select a hostel or search to filter students" />
         ) : (
-          <Table headers={["Student", "Roll No", "Card No.", "Room", "Mess", "Mess Card", "Given At / Revoked At", "Given By", "Action"]}>
+          <Table headers={["Student", "Roll No", "Card Serial No.", "Room", "Mess", "Status", "Given At / Revoked At", "Given By", "Action"]}>
             {filtered.map((s: any) => {
-              const inv = s.inventory || {};
-              const hasCard = !!inv.messCard;
+              const hasCard = !!s.messCard;
               const timeDisplay = hasCard
-                ? (inv.messCardGivenAt ? `Given ${fmtTime(inv.messCardGivenAt)}` : "Given")
-                : (inv.messCardRevokedAt ? `Revoked ${fmtTime(inv.messCardRevokedAt)}` : "—");
-              const messName = s.assignedMess || "—";
+                ? (s.messCardGivenAt ? `Given ${fmtTime(s.messCardGivenAt)}` : "Given")
+                : (s.messCardRevokedAt ? `Revoked ${fmtTime(s.messCardRevokedAt)}` : "—");
+              const messName = s.assignedMess || s.allottedMess || "—";
               const isToggling = toggling === s.id;
               return (
                 <tr key={s.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
@@ -128,16 +135,18 @@ export default function Mess() {
                   <td className="px-4 py-3 text-sm text-slate-400">{s.rollNumber || "—"}</td>
                   <td className="px-4 py-3">
                     {s.messCardNo
-                      ? <span className="inline-block px-2 py-0.5 rounded bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold">#{s.messCardNo}</span>
+                      ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold">
+                          <CreditCard size={10} /> #{s.messCardNo}
+                        </span>
                       : <span className="text-slate-600 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.roomNumber || "—"}</td>
-                  <td className="px-4 py-3 text-sm text-slate-400">{messName}</td>
+                  <td className="px-4 py-3 text-sm text-slate-400 max-w-32 truncate" title={messName}>{messName}</td>
                   <td className="px-4 py-3">
                     <Badge label={hasCard ? "Given" : "Not Given"} color={hasCard ? "green" : "gray"} />
                   </td>
                   <td className="px-4 py-3 text-xs text-slate-500">{timeDisplay}</td>
-                  <td className="px-4 py-3 text-xs text-slate-400">{inv.messCardGivenByName || "—"}</td>
+                  <td className="px-4 py-3 text-xs text-slate-400">{s.messCardGivenByName || "—"}</td>
                   <td className="px-4 py-3">
                     {hasCard ? (
                       <button
