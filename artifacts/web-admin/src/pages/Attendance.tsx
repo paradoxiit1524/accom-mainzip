@@ -13,37 +13,47 @@ function fmt(ts?: string | null) {
   return new Date(ts).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: true, hour: "2-digit", minute: "2-digit" });
 }
 
-// ─── Volunteer Room Attendance View ─────────────────────────────────────────
+// ─── Volunteer Room Attendance View ──────────────────────────────────────────
 function VolunteerAttendance() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const hostelId = user?.hostelId || "";
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "entered" | "not_entered">("all");
+  const QK = ["vol-attendance", hostelId];
 
   const { data: students = [], isLoading, refetch } = useQuery<any[]>({
-    queryKey: ["vol-attendance", hostelId],
+    queryKey: QK,
     queryFn: () => apiFetch<any[]>(`/attendance${hostelId ? `?hostelId=${hostelId}` : ""}`),
-    refetchInterval: 15000,
+    refetchInterval: 8000,
+    refetchOnWindowFocus: true,
     enabled: !!hostelId,
   });
 
   const markMut = useMutation({
     mutationFn: ({ studentId, status }: { studentId: string; status: string }) =>
       apiFetch(`/attendance/${studentId}`, { method: "POST", body: JSON.stringify({ status }) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vol-attendance"] }),
+
+    // Optimistic update — flip the status in cache immediately
+    onMutate: async ({ studentId, status }) => {
+      await qc.cancelQueries({ queryKey: QK });
+      const prev = qc.getQueryData<any[]>(QK);
+      qc.setQueryData<any[]>(QK, old =>
+        (old || []).map(s =>
+          s.id === studentId ? { ...s, attendance: { ...(s.attendance || {}), status } } : s
+        )
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(QK, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: QK }),
   });
 
-  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
-
-  async function toggle(studentId: string, current: string) {
+  function toggle(studentId: string, current: string) {
     const next = current === "entered" ? "not_entered" : "entered";
-    setPendingIds(p => new Set([...p, studentId]));
-    try {
-      await markMut.mutateAsync({ studentId, status: next });
-    } finally {
-      setPendingIds(p => { const n = new Set(p); n.delete(studentId); return n; });
-    }
+    markMut.mutate({ studentId, status: next });
   }
 
   const entered = (students as any[]).filter((s: any) => s.attendance?.status === "entered").length;
@@ -61,10 +71,7 @@ function VolunteerAttendance() {
   });
 
   if (!hostelId) {
-    return (
-      <EmptyState icon={ClipboardCheck} title="No Hostel Assigned"
-        sub="You need to be assigned to a hostel to mark attendance." />
-    );
+    return <EmptyState icon={ClipboardCheck} title="No Hostel Assigned" sub="You need to be assigned to a hostel to mark attendance." />;
   }
 
   return (
@@ -131,7 +138,7 @@ function VolunteerAttendance() {
           <Table headers={["Student", "Roll No", "Room", "Status", "Mark"]}>
             {filtered.map((s: any) => {
               const status = s.attendance?.status || "not_entered";
-              const isPending = pendingIds.has(s.id);
+              const isPending = markMut.isPending && (markMut.variables as any)?.studentId === s.id;
               return (
                 <tr key={s.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
                   <td className="px-4 py-3">
@@ -159,7 +166,9 @@ function VolunteerAttendance() {
                           : "bg-green-500/10 hover:bg-green-500/20 text-green-400 border-green-500/20"
                       }`}
                     >
-                      {isPending ? <Spinner size={12} /> : status === "entered" ? <><LogOut size={11} /> Mark Not Entered</> : <><LogIn size={11} /> Mark Entered</>}
+                      {isPending ? <Spinner size={12} /> : status === "entered"
+                        ? <><LogOut size={11} /> Mark Not Entered</>
+                        : <><LogIn size={11} /> Mark Entered</>}
                     </button>
                   </td>
                 </tr>
@@ -172,7 +181,7 @@ function VolunteerAttendance() {
   );
 }
 
-// ─── Check-In Modal (coordinator/admin/superadmin) ───────────────────────────
+// ─── Check-In Modal ───────────────────────────────────────────────────────────
 function CheckInModal({ visible, onClose, hostels, onSuccess }: { visible: boolean; onClose: () => void; hostels: any[]; onSuccess: () => void }) {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -212,32 +221,22 @@ function CheckInModal({ visible, onClose, hostels, onSuccess }: { visible: boole
             <h2 className="text-base font-bold text-white">Check In Student</h2>
             <p className="text-xs text-slate-500">Search and mark a student as checked in</p>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
-            <X size={18} />
-          </button>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X size={18} /></button>
         </div>
-
         <div className="flex gap-2 mb-3">
           <div className="relative flex-1">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+            <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search by name, roll, or email…"
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 outline-none focus:border-purple-500/60 transition-all"
-              autoFocus
-            />
+              autoFocus />
           </div>
-          <select
-            value={hostelFilter}
-            onChange={e => setHostelFilter(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-purple-500/60 transition-all"
-          >
+          <select value={hostelFilter} onChange={e => setHostelFilter(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-purple-500/60 transition-all">
             <option value="">All Hostels</option>
             {hostels.map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
         </div>
-
         <div className="max-h-72 overflow-y-auto rounded-xl border border-white/8 divide-y divide-white/5">
           {search.trim().length < 2 ? (
             <div className="py-8 text-center text-slate-500 text-sm">Type at least 2 characters to search</div>
@@ -245,35 +244,27 @@ function CheckInModal({ visible, onClose, hostels, onSuccess }: { visible: boole
             <div className="py-8 flex justify-center"><Spinner size={20} /></div>
           ) : students.length === 0 ? (
             <div className="py-8 text-center text-slate-500 text-sm">No students found</div>
-          ) : (
-            students.map((s: any) => {
-              const isSuccess = successIds.has(s.id);
-              const isChecking = checking === s.id;
-              return (
-                <div key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
-                    <span className="text-purple-400 text-xs font-bold">{(s.name || "?")[0].toUpperCase()}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-200 truncate">{s.name}</p>
-                    <p className="text-xs text-slate-500 truncate">{s.rollNumber || s.email} {s.roomNumber ? `· Room ${s.roomNumber}` : ""}</p>
-                    <p className="text-xs text-slate-600 truncate">{s.hostelName || "—"}</p>
-                  </div>
-                  <button
-                    onClick={() => handleCheckIn(s.id)}
-                    disabled={isChecking || isSuccess}
-                    className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all disabled:opacity-60 ${
-                      isSuccess
-                        ? "bg-green-500/15 text-green-400 border-green-500/25"
-                        : "bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border-purple-500/30"
-                    }`}
-                  >
-                    {isChecking ? <Spinner size={12} /> : isSuccess ? "✓ Checked In" : "Check In"}
-                  </button>
+          ) : students.map((s: any) => {
+            const isSuccess = successIds.has(s.id);
+            const isChecking = checking === s.id;
+            return (
+              <div key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+                  <span className="text-purple-400 text-xs font-bold">{(s.name || "?")[0].toUpperCase()}</span>
                 </div>
-              );
-            })
-          )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-200 truncate">{s.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{s.rollNumber || s.email}{s.roomNumber ? ` · Room ${s.roomNumber}` : ""}</p>
+                </div>
+                <button onClick={() => handleCheckIn(s.id)} disabled={isChecking || isSuccess}
+                  className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all disabled:opacity-60 ${
+                    isSuccess ? "bg-green-500/15 text-green-400 border-green-500/25" : "bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border-purple-500/30"
+                  }`}>
+                  {isChecking ? <Spinner size={12} /> : isSuccess ? "✓ Done" : "Check In"}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -295,7 +286,8 @@ function CoordAttendance() {
   const { data: checkins = [], isLoading, refetch } = useQuery({
     queryKey: ["checkins", allDates ? "all" : date, hostelFilter],
     queryFn: () => apiFetch<any[]>(`/checkins?date=${allDates ? "all" : date}${hostelFilter ? `&hostelId=${hostelFilter}` : ""}&limit=1000`),
-    refetchInterval: 15000,
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
   });
 
   const checkoutMut = useMutation({
@@ -316,9 +308,7 @@ function CoordAttendance() {
 
   return (
     <div className="fade-in">
-      <PageHeader
-        title="Attendance"
-        subtitle="Check-in/out tracking for all students"
+      <PageHeader title="Attendance" subtitle="Check-in/out tracking for all students"
         action={
           <div className="flex gap-2">
             <Button variant="primary" size="sm" onClick={() => setCheckInModalOpen(true)}>
@@ -353,30 +343,21 @@ function CoordAttendance() {
         <div className="p-4 border-b border-white/8 flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
             <Calendar size={14} className="text-slate-500" />
-            <input
-              type="date"
-              value={allDates ? "" : date}
-              max={today}
-              disabled={allDates}
+            <input type="date" value={allDates ? "" : date} max={today} disabled={allDates}
               onChange={e => setDate(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-purple-500/60 transition-all disabled:opacity-40"
-            />
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-purple-500/60 transition-all disabled:opacity-40" />
           </div>
-          <button
-            onClick={() => setAllDates(a => !a)}
+          <button onClick={() => setAllDates(a => !a)}
             className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all ${
               allDates ? "bg-purple-600/20 text-purple-400 border-purple-500/30" : "text-slate-400 border-white/8 hover:bg-white/5"
-            }`}
-          >
+            }`}>
             <CalendarDays size={13} /> All Dates
           </button>
           <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40" disabled={isRestricted}>
             <option value="">All Hostels</option>
             {(hostels as any[]).map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </Select>
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
-            <RefreshCw size={13} /> Refresh
-          </Button>
+          <Button variant="ghost" size="sm" onClick={() => refetch()}><RefreshCw size={13} /> Refresh</Button>
           <span className="text-xs text-slate-500 ml-auto">{(checkins as any[]).length} records</span>
         </div>
 
@@ -404,34 +385,24 @@ function CoordAttendance() {
                 <td className="px-4 py-3 text-sm text-slate-300">{fmt(c.checkInTime)}</td>
                 <td className="px-4 py-3 text-sm text-slate-300">{fmt(c.checkOutTime)}</td>
                 <td className="px-4 py-3">
-                  {c.checkOutTime
-                    ? <Badge label="Checked Out" color="blue" />
-                    : <Badge label="In Campus" color="green" />}
+                  {c.checkOutTime ? <Badge label="Checked Out" color="blue" /> : <Badge label="In Campus" color="green" />}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1.5">
                     {!c.checkOutTime ? (
-                      <button
-                        onClick={() => checkoutMut.mutate(c.id)}
-                        disabled={checkoutMut.isPending}
-                        className="text-xs px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1"
-                      >
+                      <button onClick={() => checkoutMut.mutate(c.id)} disabled={checkoutMut.isPending}
+                        className="text-xs px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1">
                         <LogOut size={11} /> Check Out
                       </button>
                     ) : (
-                      <button
-                        onClick={() => revokeCheckoutMut.mutate(c.id)}
-                        disabled={revokeCheckoutMut.isPending}
-                        className="text-xs px-2.5 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/20 rounded-lg transition-all disabled:opacity-50"
-                      >
-                        Undo Checkout
+                      <button onClick={() => revokeCheckoutMut.mutate(c.id)} disabled={revokeCheckoutMut.isPending}
+                        className="text-xs px-2.5 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/20 rounded-lg transition-all disabled:opacity-50">
+                        Undo
                       </button>
                     )}
-                    <button
-                      onClick={() => { if (confirm(`Revoke check-in for ${c.studentName}?`)) revokeCheckinMut.mutate(c.studentId); }}
+                    <button onClick={() => { if (confirm(`Revoke check-in for ${c.studentName}?`)) revokeCheckinMut.mutate(c.studentId); }}
                       disabled={revokeCheckinMut.isPending}
-                      className="text-xs px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition-all disabled:opacity-50"
-                    >
+                      className="text-xs px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition-all disabled:opacity-50">
                       Revoke
                     </button>
                   </div>
@@ -442,17 +413,12 @@ function CoordAttendance() {
         )}
       </Card>
 
-      <CheckInModal
-        visible={checkInModalOpen}
-        onClose={() => setCheckInModalOpen(false)}
-        hostels={hostels as any[]}
-        onSuccess={() => refetch()}
-      />
+      <CheckInModal visible={checkInModalOpen} onClose={() => setCheckInModalOpen(false)}
+        hostels={hostels as any[]} onSuccess={() => refetch()} />
     </div>
   );
 }
 
-// ─── Main export — role-adaptive ─────────────────────────────────────────────
 export default function Attendance() {
   const { user } = useAuth();
   if (user?.role === "volunteer") return <VolunteerAttendance />;

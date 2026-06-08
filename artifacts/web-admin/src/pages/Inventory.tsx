@@ -7,64 +7,55 @@ import { Package, Download, RefreshCw, Search, Lock, Unlock, CheckSquare, Square
 
 const COORD_UP = ["coordinator", "admin", "superadmin"];
 
-// ─── Inventory checkbox cell (volunteer can edit if not locked) ───────────────
-function InvCheckbox({
-  checked, locked, onChange, disabled,
-}: { checked: boolean; locked: boolean; onChange: (v: boolean) => void; disabled: boolean }) {
-  if (locked) {
-    return checked
-      ? <span className="inline-flex items-center gap-1 text-xs text-green-400"><CheckSquare size={14} /></span>
-      : <span className="inline-flex items-center gap-1 text-xs text-slate-600"><Square size={14} /></span>;
-  }
-  return (
-    <button
-      onClick={() => onChange(!checked)}
-      disabled={disabled}
-      className="disabled:opacity-50 transition-colors"
-    >
-      {checked
-        ? <CheckSquare size={16} className="text-purple-400 hover:text-purple-300" />
-        : <Square size={16} className="text-slate-600 hover:text-slate-400" />}
-    </button>
-  );
-}
-
-// ─── Volunteer Inventory View — editable checkboxes + submit ─────────────────
+// ─── Volunteer Inventory View — optimistic checkboxes + submit ───────────────
 function VolunteerInventory() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const hostelId = user?.hostelId || "";
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
-  const [saving, setSaving] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState<Set<string>>(new Set());
+  const QK = ["inv-vol", hostelId];
 
   const { data: students = [], isLoading, refetch } = useQuery<any[]>({
-    queryKey: ["inv-students-vol", hostelId],
+    queryKey: QK,
     queryFn: () => apiFetch<any[]>(`/attendance${hostelId ? `?hostelId=${hostelId}` : ""}`),
-    refetchInterval: 15000,
+    refetchInterval: 8000,
+    refetchOnWindowFocus: true,
     enabled: !!hostelId,
   });
 
-  async function patchItem(studentId: string, field: string, value: boolean) {
-    setSaving(p => new Set([...p, studentId]));
-    try {
-      await apiFetch(`/attendance/inventory/${studentId}`, {
+  // Optimistic checkbox mutation
+  const patchMut = useMutation({
+    mutationFn: ({ studentId, field, value }: { studentId: string; field: string; value: boolean }) =>
+      apiFetch(`/attendance/inventory/${studentId}`, {
         method: "PATCH",
         body: JSON.stringify({ [field]: value }),
-      });
-      qc.invalidateQueries({ queryKey: ["inv-students-vol"] });
-    } finally {
-      setSaving(p => { const n = new Set(p); n.delete(studentId); return n; });
-    }
-  }
+      }),
+    onMutate: async ({ studentId, field, value }) => {
+      await qc.cancelQueries({ queryKey: QK });
+      const prev = qc.getQueryData<any[]>(QK);
+      qc.setQueryData<any[]>(QK, old =>
+        (old || []).map(s =>
+          s.id === studentId
+            ? { ...s, inventory: { ...(s.inventory || {}), [field]: value } }
+            : s
+        )
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(QK, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: QK }),
+  });
 
-  async function submitInventory(studentId: string) {
-    if (!confirm("Submit inventory? This permanently locks it and cannot be undone.")) return;
+  async function submitInventory(studentId: string, name: string) {
+    if (!confirm(`Submit inventory for ${name}? This permanently locks it and cannot be undone.`)) return;
     setSubmitting(p => new Set([...p, studentId]));
     try {
       await apiFetch(`/attendance/inventory/${studentId}/submit`, { method: "POST" });
-      qc.invalidateQueries({ queryKey: ["inv-students-vol"] });
+      qc.invalidateQueries({ queryKey: QK });
     } finally {
       setSubmitting(p => { const n = new Set(p); n.delete(studentId); return n; });
     }
@@ -92,16 +83,35 @@ function VolunteerInventory() {
     return <EmptyState icon={Package} title="No Hostel Assigned" sub="You need to be assigned to a hostel." />;
   }
 
+  function Checkbox({ studentId, field, checked, locked }: { studentId: string; field: string; checked: boolean; locked: boolean }) {
+    const isPending = patchMut.isPending &&
+      (patchMut.variables as any)?.studentId === studentId &&
+      (patchMut.variables as any)?.field === field;
+
+    if (locked) {
+      return checked
+        ? <CheckSquare size={16} className="text-green-400" />
+        : <Square size={16} className="text-slate-600" />;
+    }
+    return (
+      <button
+        onClick={() => patchMut.mutate({ studentId, field, value: !checked })}
+        disabled={isPending}
+        className="disabled:opacity-40 transition-all hover:scale-110"
+      >
+        {checked
+          ? <CheckSquare size={16} className="text-purple-400" />
+          : <Square size={16} className="text-slate-500 hover:text-slate-300" />}
+      </button>
+    );
+  }
+
   return (
     <div className="fade-in">
       <PageHeader
         title="Inventory"
         subtitle={`Room inventory for ${hostelId} — mattress, bedsheet, pillow`}
-        action={
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
-            <RefreshCw size={13} /> Refresh
-          </Button>
-        }
+        action={<Button variant="ghost" size="sm" onClick={() => refetch()}><RefreshCw size={13} /> Refresh</Button>}
       />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -111,13 +121,8 @@ function VolunteerInventory() {
           { label: "Total Students", value: (students as any[]).length, icon: Package, color: "text-purple-400 bg-purple-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="p-4 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-              <Icon size={18} />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-white">{value}</p>
-              <p className="text-xs text-slate-500">{label}</p>
-            </div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}><Icon size={18} /></div>
+            <div><p className="text-xl font-bold text-white">{value}</p><p className="text-xs text-slate-500">{label}</p></div>
           </Card>
         ))}
       </div>
@@ -134,9 +139,7 @@ function VolunteerInventory() {
             <option value="has_items">Has Items</option>
             <option value="active">Not Locked</option>
           </Select>
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
-            <RefreshCw size={13} /> Refresh
-          </Button>
+          <Button variant="ghost" size="sm" onClick={() => refetch()}><RefreshCw size={13} /> Refresh</Button>
           <span className="text-xs text-slate-500 ml-auto">{filtered.length} students</span>
         </div>
 
@@ -145,12 +148,12 @@ function VolunteerInventory() {
         ) : filtered.length === 0 ? (
           <EmptyState icon={Package} title="No students" sub="No students match your filter" />
         ) : (
-          <Table headers={["Student", "Roll No", "Room", "Mattress", "Bedsheet", "Pillow", "Status", "Action"]}>
+          <Table headers={["Student", "Roll No", "Room", "Mattress", "Bedsheet", "Pillow", "Status", "Submit"]}>
             {filtered.map((s: any) => {
               const inv = s.inventory || {};
               const isLocked = !!inv.inventoryLocked;
-              const isSaving = saving.has(s.id);
               const isSubmitting = submitting.has(s.id);
+              const hasAny = inv.mattress || inv.bedsheet || inv.pillow;
               return (
                 <tr key={s.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
                   <td className="px-4 py-3">
@@ -160,44 +163,32 @@ function VolunteerInventory() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-slate-200">{s.name}</p>
-                        <p className="text-xs text-slate-500">{s.email}</p>
+                        <p className="text-xs text-slate-500">{s.rollNumber || "—"}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.rollNumber || "—"}</td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.roomNumber || "—"}</td>
-                  <td className="px-4 py-3">
-                    <InvCheckbox checked={!!inv.mattress} locked={isLocked} disabled={isSaving}
-                      onChange={v => patchItem(s.id, "mattress", v)} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <InvCheckbox checked={!!inv.bedsheet} locked={isLocked} disabled={isSaving}
-                      onChange={v => patchItem(s.id, "bedsheet", v)} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <InvCheckbox checked={!!inv.pillow} locked={isLocked} disabled={isSaving}
-                      onChange={v => patchItem(s.id, "pillow", v)} />
-                  </td>
+                  <td className="px-4 py-3"><Checkbox studentId={s.id} field="mattress" checked={!!inv.mattress} locked={isLocked} /></td>
+                  <td className="px-4 py-3"><Checkbox studentId={s.id} field="bedsheet" checked={!!inv.bedsheet} locked={isLocked} /></td>
+                  <td className="px-4 py-3"><Checkbox studentId={s.id} field="pillow" checked={!!inv.pillow} locked={isLocked} /></td>
                   <td className="px-4 py-3">
                     {isLocked
                       ? <Badge label="Locked" color="green" />
-                      : (inv.mattress || inv.bedsheet || inv.pillow)
-                        ? <Badge label="Active" color="yellow" />
-                        : <Badge label="Empty" color="gray" />}
+                      : hasAny ? <Badge label="Active" color="yellow" />
+                      : <Badge label="Empty" color="gray" />}
                   </td>
                   <td className="px-4 py-3">
                     {!isLocked ? (
                       <button
-                        onClick={() => submitInventory(s.id)}
-                        disabled={isSubmitting || (!inv.mattress && !inv.bedsheet && !inv.pillow)}
+                        onClick={() => submitInventory(s.id, s.name)}
+                        disabled={isSubmitting || !hasAny}
                         className="text-xs px-2.5 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 rounded-lg transition-all disabled:opacity-40 flex items-center gap-1"
                       >
                         {isSubmitting ? <Spinner size={11} /> : <Lock size={11} />} Submit
                       </button>
                     ) : (
-                      <span className="text-xs text-green-500/70 flex items-center gap-1">
-                        <Lock size={11} /> Locked
-                      </span>
+                      <span className="text-xs text-green-500/60 flex items-center gap-1"><Lock size={11} /> Locked</span>
                     )}
                   </td>
                 </tr>
@@ -219,15 +210,12 @@ function CoordInventory() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const { data: hostels = [] } = useQuery({
-    queryKey: ["hostels"],
-    queryFn: () => apiFetch<any[]>("/hostels"),
-  });
-
+  const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels") });
   const { data: students = [], isLoading, refetch } = useQuery<any[]>({
     queryKey: ["inv-students", hostelFilter],
     queryFn: () => apiFetch<any[]>(`/attendance${hostelFilter ? `?hostelId=${hostelFilter}` : ""}`),
     refetchInterval: 10000,
+    refetchOnWindowFocus: true,
   });
 
   const revokeMut = useMutation({
@@ -255,15 +243,14 @@ function CoordInventory() {
   });
 
   function dot(given: boolean) {
-    if (given) return <span className="inline-flex items-center gap-1 text-xs text-green-400"><CheckSquare size={13} /></span>;
-    return <span className="inline-flex items-center gap-1 text-xs text-slate-600"><Square size={13} /></span>;
+    return given
+      ? <CheckSquare size={14} className="text-green-400" />
+      : <Square size={14} className="text-slate-600" />;
   }
 
   return (
     <div className="fade-in">
-      <PageHeader
-        title="Inventory"
-        subtitle="Room inventory — mattress, bedsheet, pillow status"
+      <PageHeader title="Inventory" subtitle="Room inventory — mattress, bedsheet, pillow status"
         action={
           <Button variant="secondary" size="sm" onClick={() => downloadFile("/export/inventory.csv", "inventory.csv")}>
             <Download size={14} /> Download CSV
@@ -278,13 +265,8 @@ function CoordInventory() {
           { label: "Total Students", value: (students as any[]).length, icon: Package, color: "text-purple-400 bg-purple-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="p-4 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-              <Icon size={18} />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-white">{value}</p>
-              <p className="text-xs text-slate-500">{label}</p>
-            </div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}><Icon size={18} /></div>
+            <div><p className="text-xl font-bold text-white">{value}</p><p className="text-xs text-slate-500">{label}</p></div>
           </Card>
         ))}
       </div>
@@ -305,9 +287,7 @@ function CoordInventory() {
             <option value="has_items">Has Items</option>
             <option value="active">Active</option>
           </Select>
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
-            <RefreshCw size={13} /> Refresh
-          </Button>
+          <Button variant="ghost" size="sm" onClick={() => refetch()}><RefreshCw size={13} /> Refresh</Button>
           <span className="text-xs text-slate-500 ml-auto">{filtered.length} students</span>
         </div>
 
@@ -319,7 +299,7 @@ function CoordInventory() {
           <Table headers={["Student", "Roll No", "Room", "Hostel", "Mattress", "Bedsheet", "Pillow", "Status", "Action"]}>
             {filtered.map((s: any) => {
               const inv = s.inventory || {};
-              const hostelName = (hostels as any[]).find((h: any) => h.id === s.hostelId)?.name || s.hostelName || "—";
+              const hostelName = (hostels as any[]).find((h: any) => h.id === s.hostelId)?.name || "—";
               return (
                 <tr key={s.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
                   <td className="px-4 py-3">
@@ -340,11 +320,9 @@ function CoordInventory() {
                   <td className="px-4 py-3">{dot(inv.bedsheet)}</td>
                   <td className="px-4 py-3">{dot(inv.pillow)}</td>
                   <td className="px-4 py-3">
-                    {inv.inventoryLocked
-                      ? <Badge label="Locked" color="green" />
-                      : (inv.mattress || inv.bedsheet || inv.pillow)
-                        ? <Badge label="Active" color="yellow" />
-                        : <Badge label="Empty" color="gray" />}
+                    {inv.inventoryLocked ? <Badge label="Locked" color="green" />
+                      : (inv.mattress || inv.bedsheet || inv.pillow) ? <Badge label="Active" color="yellow" />
+                      : <Badge label="Empty" color="gray" />}
                   </td>
                   <td className="px-4 py-3">
                     {(inv.mattress || inv.bedsheet || inv.pillow || inv.inventoryLocked) && (
@@ -367,7 +345,6 @@ function CoordInventory() {
   );
 }
 
-// ─── Main export — role-adaptive ─────────────────────────────────────────────
 export default function Inventory() {
   const { user } = useAuth();
   if (user?.role === "volunteer") return <VolunteerInventory />;

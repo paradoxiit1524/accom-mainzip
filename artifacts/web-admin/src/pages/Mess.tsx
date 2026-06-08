@@ -112,15 +112,17 @@ export default function Mess() {
     queryFn: () => apiFetch<any[]>("/hostels"),
   });
 
+  const QK = ["mess-students", hostelFilter];
+
   const { data: raw, isLoading, refetch } = useQuery<any>({
-    queryKey: ["mess-students", hostelFilter],
+    queryKey: QK,
     queryFn: () => {
       const params = new URLSearchParams({ limit: "10000", offset: "0" });
       if (hostelFilter) params.set("hostelId", hostelFilter);
       return apiFetch<any>(`/students?${params}`);
     },
-    refetchInterval: 30000,
-    staleTime: 20000,
+    refetchInterval: 10000,
+    staleTime: 8000,
     refetchOnWindowFocus: true,
   });
 
@@ -129,8 +131,28 @@ export default function Mess() {
   const toggleMut = useMutation({
     mutationFn: ({ studentId, messCard }: { studentId: string; messCard: boolean }) =>
       apiFetch(`/attendance/mess-card/${studentId}`, { method: "PATCH", body: JSON.stringify({ messCard }) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mess-students"] }); },
-    onSettled: () => setToggling(null),
+
+    // Optimistic update — flip messCard in cache immediately so UI responds without waiting
+    onMutate: async ({ studentId, messCard }) => {
+      await qc.cancelQueries({ queryKey: QK });
+      const prev = qc.getQueryData(QK);
+      qc.setQueryData(QK, (old: any) => {
+        const arr: any[] = Array.isArray(old) ? old : (old?.students || old?.data || []);
+        const updated = arr.map((s: any) =>
+          s.id === studentId ? { ...s, messCard } : s
+        );
+        if (Array.isArray(old)) return updated;
+        return { ...old, students: updated, data: updated };
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(QK, ctx.prev);
+    },
+    onSettled: () => {
+      setToggling(null);
+      qc.invalidateQueries({ queryKey: QK });
+    },
   });
 
   const given = students.filter((s: any) => s.messCard).length;

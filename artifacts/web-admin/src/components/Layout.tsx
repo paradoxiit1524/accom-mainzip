@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { cn } from "./ui";
 import { useAuth } from "@/context/AuthContext";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import {
   LayoutDashboard, Users, Building2, UserCog,
@@ -39,6 +39,7 @@ export const NAV: { id: Page; label: string; icon: React.ElementType; roles?: st
 
 function ActiveStatusButton({ collapsed }: { collapsed: boolean }) {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const role = user?.role || "";
   const isStaff = STAFF_ROLES.includes(role);
   const [showModal, setShowModal] = useState(false);
@@ -48,7 +49,7 @@ function ActiveStatusButton({ collapsed }: { collapsed: boolean }) {
   const { data: status, refetch: refetchStatus } = useQuery({
     queryKey: ["my-staff-status"],
     queryFn: () => apiFetch<any>("/staff/me-status"),
-    refetchInterval: 30000,
+    refetchInterval: 10000,
     enabled: isStaff,
   });
 
@@ -56,12 +57,28 @@ function ActiveStatusButton({ collapsed }: { collapsed: boolean }) {
 
   const goActiveMut = useMutation({
     mutationFn: (r: string) => apiFetch("/staff/go-active", { method: "POST", body: JSON.stringify({ remark: r }) }),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["my-staff-status"] });
+      const prev = qc.getQueryData(["my-staff-status"]);
+      qc.setQueryData(["my-staff-status"], (old: any) => ({ ...(old || {}), isActive: true }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(["my-staff-status"], ctx.prev); },
     onSuccess: () => { refetchStatus(); setShowModal(false); setRemark(""); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["my-staff-status"] }),
   });
 
   const goInactiveMut = useMutation({
     mutationFn: (r: string) => apiFetch("/staff/go-inactive", { method: "POST", body: JSON.stringify({ remark: r }) }),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["my-staff-status"] });
+      const prev = qc.getQueryData(["my-staff-status"]);
+      qc.setQueryData(["my-staff-status"], (old: any) => ({ ...(old || {}), isActive: false }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(["my-staff-status"], ctx.prev); },
     onSuccess: () => { refetchStatus(); setShowModal(false); setRemark(""); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["my-staff-status"] }),
   });
 
   useEffect(() => {
