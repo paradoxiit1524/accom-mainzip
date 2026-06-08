@@ -14,6 +14,23 @@ export const API_BASE: string =
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ||
   PROD_API;
 
+// Cache version derived from the API base URL.
+// Changing the API URL automatically invalidates ALL cached responses from the
+// old server so stale data is never shown after a migration.
+const CACHE_VERSION = API_BASE.replace(/[^a-z0-9]/gi, "").slice(-12);
+const CACHE_TTL_MS  = 5 * 60 * 1000; // 5 minutes — never serve data older than this
+const CACHE_PREFIX  = `api_cache:${CACHE_VERSION}:`;
+
+// Purge every AsyncStorage key that belongs to a different cache version.
+// Called once on startup so old-server cache is wiped immediately.
+async function purgeStaleCache() {
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const stale = allKeys.filter(k => k.startsWith("api_cache:") && !k.startsWith(CACHE_PREFIX));
+    if (stale.length > 0) await AsyncStorage.multiRemove(stale);
+  } catch {}
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type UserRole =
   | "student" | "volunteer" | "coordinator"
@@ -110,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, token: null, isLoading: true });
   const base = resolvedBase();
 
-  useEffect(() => { loadStoredAuth(); }, []);
+  useEffect(() => { purgeStaleCache(); loadStoredAuth(); }, []);
 
   // Refresh user profile every 20s so role/hostel changes from web take effect quickly
   useEffect(() => {
@@ -206,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Clear in-memory auth first so UI immediately transitions to auth screen.
     setState({ user: null, token: null, isLoading: false });
-    await AsyncStorage.multiRemove(["token"]).catch(() => {});
+    await AsyncStorage.multiRemove(["token", "cached_user"]).catch(() => {});
   }
 
   async function refreshUser() {
@@ -248,7 +265,8 @@ export function useApiRequest() {
   return useCallback(async (path: string, options: RequestInit = {}) => {
     const method = (options.method || "GET").toUpperCase();
     const isGet = method === "GET";
-    const cacheKey = `api_cache:${path}`;
+    // Versioned key — changing API URL auto-busts all old-server cache entries
+    const cacheKey = `${CACHE_PREFIX}${path}`;
 
     try {
       const res = await safeJsonFetch(`${base}${path}`, {
@@ -270,13 +288,13 @@ export function useApiRequest() {
 
       return data;
     } catch (err: any) {
-      // For GET requests on network failure, fall back to cached response
+      // For GET requests on network failure, fall back to cached response (max 5 min old)
       if (isGet) {
         try {
           const raw = await AsyncStorage.getItem(cacheKey);
           if (raw) {
-            const { data } = JSON.parse(raw);
-            return data;
+            const { data, ts } = JSON.parse(raw);
+            if (Date.now() - ts < CACHE_TTL_MS) return data;
           }
         } catch {}
       }

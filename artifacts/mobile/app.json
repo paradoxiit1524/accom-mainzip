@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CampusOps",
-    "slug": "qwert",
+    "slug": "final",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -62,18 +62,18 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://campusops.up.railway.app/api",
+      "apiUrl": "https://8fcc98ef-c551-4cec-a19b-a551adba3e94-00-2b9md7n83ykc3.pike.replit.dev/api",
       "router": {
         "origin": "https://localhost",
         "headOrigin": "https://localhost"
       },
       "eas": {
-        "projectId": "949f8de0-55d2-4d3d-bb1f-509196beba62"
+        "projectId": "fd913a6a-f1d2-4ea1-9ad6-45a9aebbcd83"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "uuyhb"
+    "owner": "sportifykartik"
   }
 }
