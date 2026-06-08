@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CampusOps",
-    "slug": "accom",
+    "slug": "hello-boss",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -68,12 +68,12 @@
         "headOrigin": "https://localhost"
       },
       "eas": {
-        "projectId": "a07a1365-0bfe-4a73-a168-129bbd2c2146"
+        "projectId": "8342dab5-e45c-447c-a10e-42eb9cd5aab0"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "kalidon"
+    "owner": "hacktheskill"
   }
 }
