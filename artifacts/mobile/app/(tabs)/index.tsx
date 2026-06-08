@@ -103,7 +103,8 @@ export default function HomeScreen() {
       qc.invalidateQueries({ queryKey: ["announcements"] });
       qc.invalidateQueries({ queryKey: ["my-status"] });
       qc.invalidateQueries({ queryKey: ["pending-count"] });
-    }, [qc])
+      if (isStudent && user?.id) qc.invalidateQueries({ queryKey: ["student-self-live", user.id] });
+    }, [qc, isStudent, user?.id])
   );
 
   const safe = React.useCallback(
@@ -117,6 +118,16 @@ export default function HomeScreen() {
     enabled: !isStudent,
     refetchInterval: 5000,
     staleTime: 2000,
+    placeholderData: keepPreviousData,
+    retry: 1,
+  });
+
+  const { data: studentSelf, refetch: refetchStudentSelf } = useQuery<any>({
+    queryKey: ["student-self-live", user?.id],
+    queryFn: () => safe(() => request(`/students/${user?.id}`), null),
+    enabled: isStudent && !!user?.id,
+    refetchInterval: 30000,
+    staleTime: 15000,
     placeholderData: keepPreviousData,
     retry: 1,
   });
@@ -363,9 +374,9 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchLiveMe?.(), refetchAnn(), refetchStats?.(), refetchStatus?.(), refetchMess?.()].filter(Boolean));
+    await Promise.all([refetchLiveMe?.(), refetchAnn(), refetchStats?.(), refetchStatus?.(), refetchMess?.(), refetchStudentSelf?.()].filter(Boolean));
     setRefreshing(false);
-  }, [refetchLiveMe, refetchAnn, refetchStats, refetchStatus, refetchMess]);
+  }, [refetchLiveMe, refetchAnn, refetchStats, refetchStatus, refetchMess, refetchStudentSelf]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -765,25 +776,121 @@ export default function HomeScreen() {
           </>
         )}
 
-        {/* ── Student view ────────────────────────────────────────────── */}
-        {isStudent && (
-          <AnimatedCard style={styles.card}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <View style={[styles.cardIconBox, { backgroundColor: theme.tint + "1A" }]}>
-                <Feather name="home" size={17} color={theme.tint} />
+        {/* ── Student Dashboard ─────────────────────────────────────── */}
+        {isStudent && (() => {
+          const sd = studentSelf || user;
+          const isIn = sd?.attendanceStatus === "entered" || !!sd?.checkInTime;
+          const attColor = isIn ? "#22c55e" : "#f59e0b";
+          const attLabel = isIn ? "In Campus" : "Out of Campus";
+          const fmtT = (iso: string | null | undefined) => {
+            if (!iso) return "—";
+            const d = new Date(iso);
+            const h = d.getHours(), m = d.getMinutes();
+            return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+          };
+          const hasMessCard = !!sd?.messCardNo;
+          const messCardGiven = !!sd?.messCard;
+          return (
+            <>
+              {/* Campus Status */}
+              <AnimatedCard style={[styles.card, { borderColor: attColor + "40", borderWidth: 1.5 }]}>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.cardIconBox, { backgroundColor: attColor + "1A" }]}>
+                    <Feather name={isIn ? "check-circle" : "clock"} size={17} color={attColor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cardTitle, { color: theme.text }]}>Campus Status</Text>
+                    <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
+                      {new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                    </Text>
+                  </View>
+                  <View style={[{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, flexDirection: "row", alignItems: "center", gap: 6 }, { backgroundColor: attColor + "15", borderColor: attColor + "50" }]}>
+                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: attColor }} />
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: attColor }}>{attLabel}</Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: "row", gap: 0, marginTop: 10 }}>
+                  <View style={{ flex: 1, alignItems: "center", paddingVertical: 8, borderRightWidth: 1, borderRightColor: theme.border }}>
+                    <Feather name="log-in" size={13} color="#22c55e" style={{ marginBottom: 3 }} />
+                    <Text style={{ fontSize: 11, color: theme.textTertiary, fontFamily: "Inter_500Medium" }}>Check-In</Text>
+                    <Text style={{ fontSize: 15, color: sd?.checkInTime ? "#22c55e" : theme.textSecondary, fontFamily: "Inter_700Bold", marginTop: 2 }}>{fmtT(sd?.checkInTime)}</Text>
+                  </View>
+                  <View style={{ flex: 1, alignItems: "center", paddingVertical: 8 }}>
+                    <Feather name="log-out" size={13} color="#f59e0b" style={{ marginBottom: 3 }} />
+                    <Text style={{ fontSize: 11, color: theme.textTertiary, fontFamily: "Inter_500Medium" }}>Check-Out</Text>
+                    <Text style={{ fontSize: 15, color: sd?.checkOutTime ? "#f59e0b" : theme.textSecondary, fontFamily: "Inter_700Bold", marginTop: 2 }}>{fmtT(sd?.checkOutTime)}</Text>
+                  </View>
+                </View>
+              </AnimatedCard>
+
+              {/* Student Details */}
+              <AnimatedCard style={styles.card}>
+                <Text style={[styles.cardTitle, { color: theme.text, marginBottom: 10 }]}>My Details</Text>
+                {[
+                  { icon: "hash", label: "Roll Number", val: sd?.rollNumber },
+                  { icon: "home", label: "Hostel", val: sd?.hostelName || sd?.hostelId },
+                  { icon: "map-pin", label: "Room", val: sd?.roomNumber },
+                  { icon: "layers", label: "Area", val: sd?.area },
+                  { icon: "coffee", label: "Mess", val: sd?.assignedMess || sd?.allottedMess },
+                  { icon: "phone", label: "Contact", val: sd?.contactNumber || sd?.phone },
+                  { icon: "user", label: "Gender", val: sd?.gender },
+                ].filter(r => r.val).map((r, i, arr) => (
+                  <View key={r.label} style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9 }, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
+                    <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: theme.tint + "15", alignItems: "center", justifyContent: "center" }}>
+                      <Feather name={r.icon as any} size={13} color={theme.tint} />
+                    </View>
+                    <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: "Inter_500Medium" }}>{r.label}</Text>
+                    <Text style={{ fontSize: 13, color: theme.text, fontFamily: "Inter_600SemiBold", maxWidth: "55%" }} numberOfLines={1}>{r.val}</Text>
+                  </View>
+                ))}
+                {!sd?.rollNumber && !sd?.hostelName && !sd?.hostelId && (
+                  <View style={styles.emptyState}>
+                    <Feather name="info" size={20} color={theme.textTertiary} />
+                    <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Details not assigned yet</Text>
+                  </View>
+                )}
+              </AnimatedCard>
+
+              {/* Mess Card */}
+              <AnimatedCard style={[styles.card, hasMessCard && { borderColor: "#7c3aed40", borderWidth: 1.5 }]}>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.cardIconBox, { backgroundColor: hasMessCard ? "#7c3aed1A" : theme.tint + "1A" }]}>
+                    <Feather name="credit-card" size={17} color={hasMessCard ? "#a78bfa" : theme.tint} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cardTitle, { color: theme.text }]}>Mess Card</Text>
+                    <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
+                      {messCardGiven ? "Card has been issued to you" : "Card not yet issued"}
+                    </Text>
+                  </View>
+                  <View style={[{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1 }, messCardGiven ? { backgroundColor: "#22c55e15", borderColor: "#22c55e40" } : { backgroundColor: theme.border + "60", borderColor: theme.border }]}>
+                    <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", color: messCardGiven ? "#22c55e" : theme.textTertiary }}>{messCardGiven ? "Issued" : "Pending"}</Text>
+                  </View>
+                </View>
+                {hasMessCard ? (
+                  <View style={{ marginTop: 10, padding: 14, borderRadius: 12, backgroundColor: "#7c3aed15", borderWidth: 1, borderColor: "#7c3aed40", alignItems: "center" }}>
+                    <Text style={{ fontSize: 11, color: "#a78bfa", fontFamily: "Inter_600SemiBold", letterSpacing: 1.2, marginBottom: 4 }}>MESS CARD NUMBER</Text>
+                    <Text style={{ fontSize: 32, color: "#c4b5fd", fontFamily: "Inter_700Bold", letterSpacing: 4 }}>{sd?.messCardNo}</Text>
+                  </View>
+                ) : (
+                  <View style={{ marginTop: 8, padding: 12, borderRadius: 10, backgroundColor: theme.border + "30", alignItems: "center" }}>
+                    <Text style={{ fontSize: 13, color: theme.textTertiary, fontFamily: "Inter_500Medium" }}>No card number assigned yet</Text>
+                  </View>
+                )}
+              </AnimatedCard>
+
+              {/* Quick Actions */}
+              <Text style={[styles.sectionLabel, { color: theme.textSecondary, paddingHorizontal: 20, marginBottom: 10 }]}>
+                Quick Access
+              </Text>
+              <View style={styles.quickGrid}>
+                <QuickCard label="Lost & Found" icon="search" color={theme.tint} onPress={() => go("/(tabs)/lostandfound")} />
+                <QuickCard label="Notifications" icon="bell" color="#8b5cf6" onPress={() => go("/(tabs)/notifications")} />
+                <QuickCard label="Profile" icon="user" color="#22c55e" onPress={() => go("/(tabs)/profile")} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.cardTitle, { color: theme.text }]}>My Hostel</Text>
-                <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
-                  {user?.hostelId ? "View details & contacts" : "No hostel assigned yet"}
-                </Text>
-              </View>
-              <Pressable onPress={() => { Haptics.selectionAsync(); go("/(tabs)/hostel"); }} hitSlop={10}>
-                <Feather name="chevron-right" size={17} color={theme.textTertiary} />
-              </Pressable>
-            </View>
-          </AnimatedCard>
-        )}
+            </>
+          );
+        })()}
 
         {/* ── Announcements (all roles) ──────────────────────────────── */}
         {canWork && (

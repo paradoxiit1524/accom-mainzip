@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, checkinsTable, usersTable, studentInventoryTable, attendanceTable, timeLogsTable } from "@workspace/db";
 import { eq, and, desc, inArray } from "drizzle-orm";
-import { requireVolunteer, generateId, AuthRequest } from "../lib/auth.js";
+import { requireAuth, requireVolunteer, generateId, AuthRequest } from "../lib/auth.js";
 
 const router = Router();
 
@@ -340,8 +340,8 @@ router.patch("/:id/revoke-checkout", requireVolunteer, async (req: AuthRequest, 
   });
 });
 
-// GET /api/checkins/:studentId/today — get today's check-in status for a student
-router.get("/:studentId/today", requireVolunteer, async (req: AuthRequest, res) => {
+// GET /api/checkins/:studentId/today — staff view, OR student viewing their own data
+router.get("/:studentId/today", requireAuth, async (req: AuthRequest, res) => {
   const studentId = String(req.params.studentId);
   const date = todayStr();
 
@@ -351,12 +351,22 @@ router.get("/:studentId/today", requireVolunteer, async (req: AuthRequest, res) 
     assignedHostelIds: usersTable.assignedHostelIds,
   }).from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!caller) { res.status(401).json({ message: "Unauthorized" }); return; }
-  const scope = scopedHostels(caller);
 
-  const [student] = await db.select({ hostelId: usersTable.hostelId })
+  // Students may only access their own check-in record
+  if (caller.role === "student" || caller.role === "pending") {
+    if (req.userId !== studentId) { res.status(403).json({ message: "Forbidden" }); return; }
+  } else {
+    // Staff: enforce hostel scope
+    const scope = scopedHostels(caller);
+    const [student] = await db.select({ hostelId: usersTable.hostelId })
+      .from(usersTable).where(eq(usersTable.id, studentId));
+    if (!student) { res.status(404).json({ message: "Student not found" }); return; }
+    if (!canAccessHostel(scope, student.hostelId)) { res.status(403).json({ message: "Forbidden" }); return; }
+  }
+
+  const [student2] = await db.select({ hostelId: usersTable.hostelId })
     .from(usersTable).where(eq(usersTable.id, studentId));
-  if (!student) { res.status(404).json({ message: "Student not found" }); return; }
-  if (!canAccessHostel(scope, student.hostelId)) { res.status(403).json({ message: "Forbidden" }); return; }
+  if (!student2) { res.status(404).json({ message: "Student not found" }); return; }
 
   const [checkin] = await db.select().from(checkinsTable)
     .where(and(eq(checkinsTable.studentId, studentId), eq(checkinsTable.date, date)));
