@@ -106,8 +106,8 @@ router.get("/me-status", requireVolunteer, async (req: AuthRequest, res) => {
   res.json({ isActive: online, lastActiveAt: user?.lastActiveAt?.toISOString() || null });
 });
 
-// GET /api/staff/active-list — who is currently active (coordinator+)
-router.get("/active-list", requireAdmin, async (req: AuthRequest, res) => {
+// GET /api/staff/active-list — who is currently active (volunteer+)
+router.get("/active-list", requireVolunteer, async (req: AuthRequest, res) => {
   const [caller] = await db.select({ role: usersTable.role, hostelId: usersTable.hostelId, assignedHostelIds: usersTable.assignedHostelIds })
     .from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!caller) { res.status(401).json({ message: "Unauthorized" }); return; }
