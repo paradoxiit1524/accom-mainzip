@@ -2,13 +2,13 @@
   "expo": {
     "extra": {
       "eas": {
-        "projectId": "365b099c-6a9b-422c-ac00-2fd4c11073dd"
+        "projectId": "a07a1365-0bfe-4a73-a168-129bbd2c2146"
       }
     },
     "android": {
       "package": "com.uuyhb.workspace"
     },
-    "owner": "sportifykartik",
-    "slug": "accom121-uxbtguh2of9vd7t1jv0mk"
+    "owner": "kalidon",
+    "slug": "accom"
   }
 }

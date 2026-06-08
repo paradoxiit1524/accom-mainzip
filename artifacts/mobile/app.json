@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CampusOps",
-    "slug": "final",
+    "slug": "accom",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -68,12 +68,12 @@
         "headOrigin": "https://localhost"
       },
       "eas": {
-        "projectId": "fd913a6a-f1d2-4ea1-9ad6-45a9aebbcd83"
+        "projectId": "a07a1365-0bfe-4a73-a168-129bbd2c2146"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "sportifykartik"
+    "owner": "kalidon"
   }
 }
