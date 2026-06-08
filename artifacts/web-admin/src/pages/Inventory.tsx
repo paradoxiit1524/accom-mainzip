@@ -52,42 +52,59 @@ function ItemActionCell({
 }) {
   const canInteract = checkedIn && !checkedOut;
 
-  if (!checkedIn && !given) {
+  // Not given and student not checked in → empty dash
+  if (!given && !checkedIn) {
+    return <span className="text-slate-700 text-xs">—</span>;
+  }
+
+  // Not given but checked in → show give button
+  if (!given) {
     return (
-      <div className="flex flex-col gap-1 items-start">
-        <span className="text-xs text-slate-600 flex items-center gap-1"><Square size={11} /> Not Given</span>
-      </div>
+      <button
+        onClick={() => canInteract && onAction("give", item, true)}
+        disabled={!canInteract || busy}
+        title="Mark as given"
+        className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border bg-white/5 border-white/10 text-slate-500 hover:border-purple-500/30 hover:text-purple-400 transition-all disabled:opacity-40"
+      >
+        <Square size={11} /> Give
+      </button>
     );
   }
 
   return (
     <div className="flex flex-col gap-1 items-start">
-      {/* Give toggle */}
+      {/* Given toggle — can un-give if not submitted */}
       <button
-        onClick={() => canInteract && onAction("give", item, !given)}
-        disabled={!canInteract || busy}
-        title={canInteract ? (given ? "Mark not given" : "Mark given") : "Check in student first"}
-        className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border transition-all disabled:opacity-50 ${
-          given
-            ? "bg-purple-600/15 border-purple-500/25 text-purple-400 hover:bg-purple-600/25"
-            : "bg-white/5 border-white/10 text-slate-500 hover:border-white/20 hover:text-slate-300"
+        onClick={() => !submitted && canInteract && onAction("give", item, false)}
+        disabled={submitted || !canInteract || busy}
+        title={submitted ? "Already submitted" : canInteract ? "Mark not given" : "Checked out"}
+        className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border transition-all disabled:cursor-default ${
+          submitted
+            ? "bg-green-500/10 border-green-500/20 text-green-400"
+            : "bg-purple-600/15 border-purple-500/25 text-purple-400 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400"
         }`}
       >
-        {given ? <CheckSquare size={11} /> : <Square size={11} />}
-        {given ? "Given" : "Not Given"}
+        <CheckSquare size={11} /> Given
       </button>
 
-      {/* Submit / Revoke */}
-      {given && !submitted && (
+      {/* Submit button — only when given & not yet submitted & can interact */}
+      {!submitted && canInteract && (
         <button
-          onClick={() => canInteract && onAction("submit", item, true)}
-          disabled={!canInteract || busy}
-          title={canInteract ? "Mark as returned/submitted" : "Check in student first"}
+          onClick={() => onAction("submit", item, true)}
+          disabled={busy}
+          title="Mark as returned/submitted"
           className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all disabled:opacity-50"
         >
           <Lock size={11} /> Submit
         </button>
       )}
+
+      {/* Given but checked-out without submitting → Missing */}
+      {!submitted && checkedOut && (
+        <span className="text-[11px] text-red-400 flex items-center gap-1"><AlertCircle size={10} /> Missing</span>
+      )}
+
+      {/* Submitted → Done chip with undo on hover */}
       {submitted && (
         <button
           onClick={() => onAction("revoke-submit", item, true)}
@@ -100,9 +117,6 @@ function ItemActionCell({
           <span className="group-hover:hidden">Done</span>
           <span className="hidden group-hover:block">Undo</span>
         </button>
-      )}
-      {!submitted && !given && checkedOut && (
-        <span className="text-[11px] text-red-400 flex items-center gap-1"><AlertCircle size={10} /> Not returned</span>
       )}
     </div>
   );
@@ -191,37 +205,37 @@ function VolunteerInventory() {
         action={<Button variant="ghost" size="sm" onClick={() => refetch()}>{isRefetching ? <Spinner size={13} /> : <RefreshCw size={13} />} Refresh</Button>}
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-5">
         {[
           { label: "Submitted", value: locked, icon: Lock, color: "text-green-400 bg-green-500/15" },
-          { label: "Pending Return", value: pending, icon: Clock, color: "text-yellow-400 bg-yellow-500/15" },
-          { label: "Total Students", value: (students as any[]).length, icon: Package, color: "text-purple-400 bg-purple-500/15" },
+          { label: "Pending", value: pending, icon: Clock, color: "text-yellow-400 bg-yellow-500/15" },
+          { label: "Total", value: (students as any[]).length, icon: Package, color: "text-purple-400 bg-purple-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="p-4 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}><Icon size={18} /></div>
-            <div><p className="text-xl font-bold text-white">{value}</p><p className="text-xs text-slate-500">{label}</p></div>
+          <Card key={label} className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}><Icon size={16} /></div>
+            <div><p className="text-lg sm:text-xl font-bold text-white">{value}</p><p className="text-[10px] sm:text-xs text-slate-500 leading-tight">{label}</p></div>
           </Card>
         ))}
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 mb-4 px-1">
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-          <Square size={12} className="text-slate-500" /> Not Given
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-4 px-1">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <Square size={11} /> Not Given
         </div>
         <div className="flex items-center gap-1.5 text-xs text-purple-400">
-          <CheckSquare size={12} /> Given (tap Submit when returned)
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-green-400">
-          <CheckCircle size={12} /> Submitted (hover to undo)
+          <CheckSquare size={11} /> Given
         </div>
         <div className="flex items-center gap-1.5 text-xs text-blue-400">
-          <Lock size={12} /> Ready to submit
+          <Lock size={11} /> Submit (when returned)
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-green-400">
+          <CheckCircle size={11} /> Done (hover/tap to undo)
         </div>
       </div>
 
       <Card>
-        <div className="p-4 border-b border-white/8 flex flex-wrap gap-3 items-center">
+        <div className="p-3 sm:p-4 border-b border-white/8 flex flex-wrap gap-2 sm:gap-3 items-center">
           <div className="relative flex-1 min-w-48">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <Input value={search} onChange={setSearch} placeholder="Search by name, roll, room…" className="pl-9" />
@@ -370,21 +384,21 @@ function CoordInventory() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-5">
         {[
-          { label: "Locked / Submitted", value: locked, icon: Lock, color: "text-green-400 bg-green-500/15" },
+          { label: "Locked", value: locked, icon: Lock, color: "text-green-400 bg-green-500/15" },
           { label: "Has Items", value: hasItems, icon: Package, color: "text-yellow-400 bg-yellow-500/15" },
-          { label: "Total Students", value: (students as any[]).length, icon: Package, color: "text-purple-400 bg-purple-500/15" },
+          { label: "Total", value: (students as any[]).length, icon: Package, color: "text-purple-400 bg-purple-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="p-4 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}><Icon size={18} /></div>
-            <div><p className="text-xl font-bold text-white">{value}</p><p className="text-xs text-slate-500">{label}</p></div>
+          <Card key={label} className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}><Icon size={16} /></div>
+            <div><p className="text-lg sm:text-xl font-bold text-white">{value}</p><p className="text-[10px] sm:text-xs text-slate-500 leading-tight">{label}</p></div>
           </Card>
         ))}
       </div>
 
       <Card>
-        <div className="p-4 border-b border-white/8 flex flex-wrap gap-3 items-center">
+        <div className="p-3 sm:p-4 border-b border-white/8 flex flex-wrap gap-2 sm:gap-3 items-center">
           <div className="relative flex-1 min-w-48">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <Input value={search} onChange={setSearch} placeholder="Search by name, roll, room…" className="pl-9" />

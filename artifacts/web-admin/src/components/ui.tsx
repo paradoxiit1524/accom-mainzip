@@ -201,12 +201,12 @@ export function StatCard({ label, value, icon: Icon, color, sub }: {
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between mb-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">{title}</h1>
-        {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
+      <div className="min-w-0">
+        <h1 className="text-xl sm:text-2xl font-bold text-white leading-tight">{title}</h1>
+        {subtitle && <p className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-snug">{subtitle}</p>}
       </div>
-      {action && <div>{action}</div>}
+      {action && <div className="flex-shrink-0">{action}</div>}
     </div>
   );
 }

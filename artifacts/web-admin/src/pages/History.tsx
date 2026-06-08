@@ -78,15 +78,15 @@ export default function History() {
 
       {tab === "checkins" && (
         <>
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-3 mb-5">
             {[
               { label: "In Campus", value: inCampus, color: "text-green-400 bg-green-500/15" },
               { label: "Checked Out", value: checkedOut, color: "text-blue-400 bg-blue-500/15" },
-              { label: "Total Records", value: checkins.length, color: "text-purple-400 bg-purple-500/15" },
+              { label: "Total", value: checkins.length, color: "text-purple-400 bg-purple-500/15" },
             ].map(({ label, value, color }) => (
-              <Card key={label} className="p-4">
-                <p className={`text-xl font-bold ${color.split(" ")[0]}`}>{value}</p>
-                <p className="text-xs text-slate-500 mt-1">{label}</p>
+              <Card key={label} className="p-3 sm:p-4">
+                <p className={`text-lg sm:text-xl font-bold ${color.split(" ")[0]}`}>{value}</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-tight">{label}</p>
               </Card>
             ))}
           </div>
@@ -141,15 +141,15 @@ export default function History() {
 
       {tab === "inventory" && (
         <>
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-3 mb-5">
             {[
-              { label: "With Inventory", value: invStudents.length, color: "text-purple-400 bg-purple-500/15" },
-              { label: "Inventory Locked", value: inventory.filter((s: any) => s.inventory?.inventoryLocked).length, color: "text-green-400 bg-green-500/15" },
-              { label: "Total Students", value: inventory.length, color: "text-slate-400 bg-slate-500/15" },
+              { label: "Has Items", value: invStudents.length, color: "text-purple-400 bg-purple-500/15" },
+              { label: "Locked", value: inventory.filter((s: any) => s.inventory?.inventoryLocked).length, color: "text-green-400 bg-green-500/15" },
+              { label: "Total", value: inventory.length, color: "text-slate-400 bg-slate-500/15" },
             ].map(({ label, value, color }) => (
-              <Card key={label} className="p-4">
-                <p className={`text-xl font-bold ${color.split(" ")[0]}`}>{value}</p>
-                <p className="text-xs text-slate-500 mt-1">{label}</p>
+              <Card key={label} className="p-3 sm:p-4">
+                <p className={`text-lg sm:text-xl font-bold ${color.split(" ")[0]}`}>{value}</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-1 leading-tight">{label}</p>
               </Card>
             ))}
           </div>

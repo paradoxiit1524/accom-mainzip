@@ -440,19 +440,19 @@ function VolunteerAttendance() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-5">
         {[
           { label: "Checked In", value: checkedIn, icon: CheckCircle, color: "text-green-400 bg-green-500/15" },
           { label: "Checked Out", value: checkedOut, icon: LogOut, color: "text-indigo-400 bg-indigo-500/15" },
           { label: "Pending", value: notChecked, icon: Clock, color: "text-slate-400 bg-slate-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="p-4 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-              <Icon size={18} />
+          <Card key={label} className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+              <Icon size={16} />
             </div>
             <div>
-              <p className="text-xl font-bold text-white">{value}</p>
-              <p className="text-xs text-slate-500">{label}</p>
+              <p className="text-lg sm:text-xl font-bold text-white">{value}</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 leading-tight">{label}</p>
             </div>
           </Card>
         ))}
@@ -677,19 +677,19 @@ function CoordAttendance() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-5">
         {[
           { label: "In Campus", value: inCampus, icon: CheckCircle, color: "text-green-400 bg-green-500/15" },
           { label: "Checked Out", value: checkedOut, icon: XCircle, color: "text-blue-400 bg-blue-500/15" },
           { label: "Total", value: (checkins as any[]).length, icon: ClipboardCheck, color: "text-purple-400 bg-purple-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="p-4 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-              <Icon size={18} />
+          <Card key={label} className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+              <Icon size={16} />
             </div>
             <div>
-              <p className="text-xl font-bold text-white">{value}</p>
-              <p className="text-xs text-slate-500">{label}</p>
+              <p className="text-lg sm:text-xl font-bold text-white">{value}</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 leading-tight">{label}</p>
             </div>
           </Card>
         ))}
