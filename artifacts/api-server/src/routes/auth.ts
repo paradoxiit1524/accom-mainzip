@@ -214,6 +214,7 @@ router.get("/me", requireAuth, async (req: AuthRequest, res) => {
 });
 
 // POST /api/auth/reset-all-passwords-to-prefix — superadmin resets ALL users' passwords to email prefix
+// Uses batched bcrypt (concurrency=8) to avoid timing out on large user sets
 router.post("/reset-all-passwords-to-prefix", requireAuth, async (req: AuthRequest, res) => {
   try {
     const [caller] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, req.userId!));
@@ -222,12 +223,16 @@ router.post("/reset-all-passwords-to-prefix", requireAuth, async (req: AuthReque
     }
     const allUsers = await db.select({ id: usersTable.id, email: usersTable.email }).from(usersTable);
     let updated = 0;
-    for (const user of allUsers) {
-      const prefix = (user.email || "").split("@")[0]?.trim();
-      if (!prefix) continue;
-      const hash = await hashPassword(prefix);
-      await db.update(usersTable).set({ passwordHash: hash }).where(eq(usersTable.id, user.id));
-      updated++;
+    const BATCH = 8;
+    for (let i = 0; i < allUsers.length; i += BATCH) {
+      const chunk = allUsers.slice(i, i + BATCH);
+      await Promise.all(chunk.map(async (user) => {
+        const prefix = (user.email || "").split("@")[0]?.trim();
+        if (!prefix) return;
+        const hash = await hashPassword(prefix);
+        await db.update(usersTable).set({ passwordHash: hash }).where(eq(usersTable.id, user.id));
+        updated++;
+      }));
     }
     return res.json({ success: true, updated, message: `Reset ${updated} passwords to email prefix` });
   } catch (err) {

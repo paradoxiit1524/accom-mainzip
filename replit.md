@@ -196,13 +196,13 @@ Proxies `/api` → `localhost:8080`
 - `AUTO_SEED` — Set to `"true"` to auto-seed demo accounts on startup
 - `EXPO_PUBLIC_API_URL` — API base URL (currently points to deployed URL)
 
-## Demo Staff Accounts (password: 123456)
+## Demo Staff Accounts
 
-- `superadmin@iitm.ac.in` — SuperAdmin
-- `admin@iitm.ac.in` — Admin (no hostel assigned by default)
-- `volunteer@iitm.ac.in` — Volunteer (assigned to Bhadra)
-- `volunteer2@iitm.ac.in` — Volunteer (assigned to second hostel)
-- `coordinator@iitm.ac.in` — Coordinator (assigned to Bhadra + second hostel)
+- `superadmin@iitm.ac.in` / `123456` — SuperAdmin
+- `24f2004962@ds.iitm.ac.in` / `24f2004962` — Admin (assigned to Cauvery)
+- `coordinator@iitm.ac.in` / `123456` — Coordinator (assigned to Bhadra + Brahmaputra)
+- `24f2004961@ds.iitm.ac.in` / `24f2004961` — Volunteer (assigned to Ganga)
+- `24f2004963@ds.iitm.ac.in` / `24f2004963` — Volunteer (assigned to Krishna)
 
 ## DB Schema
 
