@@ -4,7 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "CI=1 EXPO_PUBLIC_API_URL=https://campusops-api-production.up.railway.app/api pnpm exec expo start --web --port 8099",
+    "dev": "CI=1 EXPO_PUBLIC_API_URL=https://campusops.up.railway.app/api pnpm exec expo start --web --port 8099",
     "tunnel": "pnpm exec expo start --tunnel",
     "build": "node scripts/build.js",
     "serve": "pnpm exec expo start --no-dev --minify --localhost --port 8099",
