@@ -427,7 +427,7 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
 
 // PATCH /api/students/:id — update student details
 router.patch("/:id", requireAdmin, async (req: AuthRequest, res) => {
-  const { hostelId, roomNumber, assignedMess, attendanceStatus, phone, contactNumber, area } = req.body;
+  const { hostelId, roomNumber, assignedMess, attendanceStatus, phone, contactNumber, area, messCardNo } = req.body;
   const [user] = await db
     .update(usersTable)
     .set({
@@ -438,6 +438,7 @@ router.patch("/:id", requireAdmin, async (req: AuthRequest, res) => {
       ...(phone !== undefined && { phone }),
       ...(contactNumber !== undefined && { contactNumber }),
       ...(area !== undefined && { area }),
+      ...(messCardNo !== undefined && { messCardNo: messCardNo || null }),
     })
     .where(eq(usersTable.id, req.params.id))
     .returning();

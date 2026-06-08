@@ -91,7 +91,7 @@ EXPO_NO_DOTENV = "1"
 AUTO_SEED = "true"
 SEED_REAL_DATA = "false"
 JWT_SECRET = "f6abfd33b3d2b80c0f5f95a966c729a4a4475f307bd087b3a77911a4c4924327"
-API_TARGET = "http://127.0.0.1:8080"
+API_TARGET = "https://campusops.up.railway.app"
 EXPO_PUBLIC_API_URL = "https://campusops.up.railway.app/api"
 
 [[ports]]

@@ -1,15 +1,102 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, Card, Table, Input, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
-import { UtensilsCrossed, Download, RefreshCw, Search, CheckCircle, XCircle, CreditCard } from "lucide-react";
+import { UtensilsCrossed, Download, RefreshCw, Search, CheckCircle, XCircle, CreditCard, Pencil, Check, X } from "lucide-react";
 
 const COORD_UP = ["coordinator", "admin", "superadmin"];
 
 function fmtTime(ts?: string | null) {
   if (!ts) return "—";
   return new Date(ts).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: true, hour: "2-digit", minute: "2-digit" });
+}
+
+function CardNoCell({ student, onSaved }: { student: any; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(student.messCardNo || "");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function startEdit() {
+    setVal(student.messCardNo || "");
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      await apiFetch(`/students/${student.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ messCardNo: val.trim() || null }),
+      });
+      onSaved();
+      setEditing(false);
+    } catch {
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function cancel() {
+    setVal(student.messCardNo || "");
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <input
+          ref={inputRef}
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          className="w-24 text-xs bg-white/8 border border-purple-500/50 rounded-md px-2 py-1 text-purple-200 outline-none focus:border-purple-400"
+          placeholder="e.g. 1234"
+          disabled={saving}
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          className="w-6 h-6 flex items-center justify-center rounded bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 transition-all"
+        >
+          {saving ? <Spinner size={10} /> : <Check size={11} />}
+        </button>
+        <button
+          onClick={cancel}
+          className="w-6 h-6 flex items-center justify-center rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
+        >
+          <X size={11} />
+        </button>
+      </div>
+    );
+  }
+
+  if (student.messCardNo) {
+    return (
+      <div className="flex items-center gap-1.5 group">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold tracking-wide">
+          <CreditCard size={11} /> #{student.messCardNo}
+        </span>
+        <button
+          onClick={startEdit}
+          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-purple-300 transition-all"
+        >
+          <Pencil size={10} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={startEdit}
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-dashed border-slate-600 text-slate-500 text-xs hover:border-purple-500/50 hover:text-purple-400 transition-all"
+    >
+      <Pencil size={9} /> Set no.
+    </button>
+  );
 }
 
 export default function Mess() {
@@ -48,6 +135,7 @@ export default function Mess() {
 
   const given = students.filter((s: any) => s.messCard).length;
   const notGiven = students.length - given;
+  const withSerialNo = students.filter((s: any) => s.messCardNo).length;
 
   const filtered = students.filter((s: any) => {
     if (!search.trim()) return true;
@@ -72,11 +160,12 @@ export default function Mess() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-4 gap-4 mb-6">
         {[
           { label: "Card Given", value: given, icon: CheckCircle, color: "text-green-400 bg-green-500/15" },
           { label: "Card Not Given", value: notGiven, icon: XCircle, color: "text-red-400 bg-red-500/15" },
-          { label: "Total Students", value: students.length, icon: CreditCard, color: "text-purple-400 bg-purple-500/15" },
+          { label: "Serial No. Assigned", value: withSerialNo, icon: CreditCard, color: "text-purple-400 bg-purple-500/15" },
+          { label: "Total Students", value: students.length, icon: UtensilsCrossed, color: "text-blue-400 bg-blue-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="p-4 flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
@@ -134,11 +223,7 @@ export default function Mess() {
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.rollNumber || "—"}</td>
                   <td className="px-4 py-3">
-                    {s.messCardNo
-                      ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold">
-                          <CreditCard size={10} /> #{s.messCardNo}
-                        </span>
-                      : <span className="text-slate-600 text-xs">—</span>}
+                    <CardNoCell student={s} onSaved={() => qc.invalidateQueries({ queryKey: ["mess-students"] })} />
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.roomNumber || "—"}</td>
                   <td className="px-4 py-3 text-sm text-slate-400 max-w-32 truncate" title={messName}>{messName}</td>

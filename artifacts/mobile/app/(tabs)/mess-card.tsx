@@ -84,15 +84,15 @@ function StudentDetailSheet({ selected, selectedDetails, visible, onClose, onCon
               <Text style={sd.messHeroValue}>{mess}</Text>
             </View>
 
-            {!!(d.messCardNo || selected.messCardNo) && (
-              <View style={[sd.cardNoBadge, { backgroundColor: "#7c3aed14", borderColor: "#7c3aed40" }]}>
-                <Feather name="credit-card" size={14} color="#7c3aed" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[sd.infoKey, { color: "#7c3aed", fontSize: 10 }]}>CARD SERIAL NO.</Text>
-                  <Text style={[sd.cardNoValue, { color: "#7c3aed" }]}>{d.messCardNo || selected.messCardNo}</Text>
-                </View>
+            <View style={[sd.cardNoBadge, { backgroundColor: (d.messCardNo || selected.messCardNo) ? "#7c3aed14" : "#ffffff08", borderColor: (d.messCardNo || selected.messCardNo) ? "#7c3aed40" : "#ffffff15" }]}>
+              <Feather name="credit-card" size={14} color={(d.messCardNo || selected.messCardNo) ? "#7c3aed" : "#64748b"} />
+              <View style={{ flex: 1 }}>
+                <Text style={[sd.infoKey, { color: (d.messCardNo || selected.messCardNo) ? "#7c3aed" : "#64748b", fontSize: 10 }]}>CARD SERIAL NO.</Text>
+                <Text style={[sd.cardNoValue, { color: (d.messCardNo || selected.messCardNo) ? "#7c3aed" : "#475569", fontSize: (d.messCardNo || selected.messCardNo) ? 20 : 13 }]}>
+                  {(d.messCardNo || selected.messCardNo) ? (d.messCardNo || selected.messCardNo) : "Not assigned yet"}
+                </Text>
               </View>
-            )}
+            </View>
 
             <View style={[sd.infoCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
               {!!d.roomNumber && (
