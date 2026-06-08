@@ -84,11 +84,27 @@ function StudentDetailSheet({ selected, selectedDetails, visible, onClose, onCon
               <Text style={sd.messHeroValue}>{mess}</Text>
             </View>
 
+            {!!(d.messCardNo || selected.messCardNo) && (
+              <View style={[sd.cardNoBadge, { backgroundColor: "#7c3aed14", borderColor: "#7c3aed40" }]}>
+                <Feather name="credit-card" size={14} color="#7c3aed" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[sd.infoKey, { color: "#7c3aed", fontSize: 10 }]}>CARD SERIAL NO.</Text>
+                  <Text style={[sd.cardNoValue, { color: "#7c3aed" }]}>{d.messCardNo || selected.messCardNo}</Text>
+                </View>
+              </View>
+            )}
+
             <View style={[sd.infoCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
               {!!d.roomNumber && (
                 <View style={sd.infoRow}>
                   <Text style={[sd.infoKey, { color: theme.textSecondary }]}>Room</Text>
                   <Text style={[sd.infoVal, { color: theme.text }]}>Room {d.roomNumber}</Text>
+                </View>
+              )}
+              {!!d.rollNumber && (
+                <View style={sd.infoRow}>
+                  <Text style={[sd.infoKey, { color: theme.textSecondary }]}>Roll No.</Text>
+                  <Text style={[sd.infoVal, { color: theme.text }]}>{d.rollNumber}</Text>
                 </View>
               )}
               {!!contact && (
@@ -398,11 +414,12 @@ export default function MessCardTabScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
-                <Text style={[styles.meta, { color: theme.textSecondary }]} numberOfLines={2}>
-                  {item.email || "—"}
+                <Text style={[styles.meta, { color: theme.textSecondary }]} numberOfLines={1}>
+                  {item.rollNumber || item.email || "—"}
                 </Text>
                 <Text style={[styles.meta, { color: theme.textTertiary }]} numberOfLines={1}>
                   {item.roomNumber ? `Room ${item.roomNumber}` : "No room"}
+                  {item.messCardNo ? ` · Card #${item.messCardNo}` : ""}
                 </Text>
                 {item.messCard ? (
                   <>
@@ -416,7 +433,7 @@ export default function MessCardTabScreen() {
                     )}
                   </>
                 ) : (
-                  <Text style={[styles.meta, { color: theme.textTertiary }]}>Pass not issued</Text>
+                  <Text style={[styles.meta, { color: "#f59e0b" }]}>Pending</Text>
                 )}
               </View>
               <View style={{ alignItems: "flex-end", gap: 8 }}>
@@ -547,4 +564,6 @@ const sd = StyleSheet.create({
   statusSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
   confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14, marginBottom: 4 },
   confirmText: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
+  cardNoBadge: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 10 },
+  cardNoValue: { fontSize: 20, fontFamily: "Inter_700Bold", marginTop: 2 },
 });

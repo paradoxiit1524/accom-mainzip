@@ -57,6 +57,8 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
     roomNumber: usersTable.roomNumber,
     assignedMess: usersTable.assignedMess,
     hostelId: usersTable.hostelId,
+    messCardNo: usersTable.messCardNo,
+    gender: usersTable.gender,
   }).from(usersTable).where(
     targetHostelIds
       ? and(inArray(usersTable.hostelId, targetHostelIds), eq(usersTable.role, "student"))

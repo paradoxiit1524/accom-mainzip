@@ -103,7 +103,7 @@ export default function Mess() {
         ) : filtered.length === 0 ? (
           <EmptyState icon={UtensilsCrossed} title="No students found" sub="Select a hostel or search to filter students" />
         ) : (
-          <Table headers={["Student", "Roll No", "Room", "Mess", "Mess Card", "Given At / Revoked At", "Given By", "Action"]}>
+          <Table headers={["Student", "Roll No", "Card No.", "Room", "Mess", "Mess Card", "Given At / Revoked At", "Given By", "Action"]}>
             {filtered.map((s: any) => {
               const inv = s.inventory || {};
               const hasCard = !!inv.messCard;
@@ -126,6 +126,11 @@ export default function Mess() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.rollNumber || "—"}</td>
+                  <td className="px-4 py-3">
+                    {s.messCardNo
+                      ? <span className="inline-block px-2 py-0.5 rounded bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold">#{s.messCardNo}</span>
+                      : <span className="text-slate-600 text-xs">—</span>}
+                  </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.roomNumber || "—"}</td>
                   <td className="px-4 py-3 text-sm text-slate-400">{messName}</td>
                   <td className="px-4 py-3">
