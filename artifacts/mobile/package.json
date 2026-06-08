@@ -4,7 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "CI=false pnpm exec expo start --lan --port 9000",
+    "dev": "CI=false EXPO_PUBLIC_API_URL=https://8fcc98ef-c551-4cec-a19b-a551adba3e94-00-2b9md7n83ykc3.pike.replit.dev/api pnpm exec expo start --web --port 8099",
     "tunnel": "pnpm exec expo start --tunnel",
     "build": "node scripts/build.js",
     "serve": "pnpm exec expo start --no-dev --minify --localhost --port 8099",
