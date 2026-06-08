@@ -6,7 +6,6 @@ import express, {
 } from "express";
 import cors from "cors";
 import compression from "compression";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import path from "path";
 import { existsSync } from "fs";
@@ -65,29 +64,6 @@ app.use(
 app.use(express.json({ limit: "512kb" }));
 app.use(express.urlencoded({ extended: true, limit: "512kb" }));
 
-// ================= RATE LIMITERS =================
-
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5000,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: "Too many requests",
-    message: "Please try again later",
-  },
-});
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: "Too many auth attempts",
-    message: "Please wait before trying again",
-  },
-});
 
 // ================= CACHE =================
 
@@ -106,12 +82,6 @@ app.use("/api/hostels", (req, res, next) => {
 });
 
 // ================= ROUTES =================
-
-// ✅ Apply auth limiter only to auth routes
-app.use("/api/auth", authLimiter);
-
-// ✅ Apply general limiter
-app.use("/api", generalLimiter);
 
 // ✅ SSE LIVE-SYNC EMITTER — registered BEFORE the router so res.on("finish")
 // fires after every successful mutation and pushes the event to all SSE clients.
