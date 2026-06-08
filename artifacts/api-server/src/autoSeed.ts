@@ -26,6 +26,7 @@ const DEMO_STUDENT = {
   assignedHostelIds: "[]",
   phone: "+91 9876543000",
   rollNumber: "21f3000000",
+  messCardNo: "0001",
 };
 
 // Demo staff accounts seeded in development/staging
@@ -102,6 +103,9 @@ export async function autoSeed() {
           passwordHash,
           role: DEMO_STUDENT.role,
           hostelId: DEMO_STUDENT.hostelId,
+          phone: DEMO_STUDENT.phone,
+          rollNumber: DEMO_STUDENT.rollNumber,
+          messCardNo: DEMO_STUDENT.messCardNo,
           isActive: true,
         }).where(eq(usersTable.id, existing.id));
       } else {
@@ -115,6 +119,7 @@ export async function autoSeed() {
           assignedHostelIds: DEMO_STUDENT.assignedHostelIds,
           phone: DEMO_STUDENT.phone,
           rollNumber: DEMO_STUDENT.rollNumber,
+          messCardNo: DEMO_STUDENT.messCardNo,
           isActive: true,
         }).onConflictDoNothing();
       }
