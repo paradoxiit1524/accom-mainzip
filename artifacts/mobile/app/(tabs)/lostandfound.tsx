@@ -686,67 +686,145 @@ function StudentSelfView({ theme, user, request }: { theme: any; user: any; requ
     { key: "pillow", given: inv?.pillow, submitted: inv?.pillowSubmitted },
   ];
 
+  const statusColor = isOut ? "#6366f1" : isIn ? "#22c55e" : "#f59e0b";
+  const statusIcon = isOut ? "log-out" : isIn ? "log-in" : "clock";
+  const statusText = isOut ? "Checked Out" : isIn ? "Checked In" : "Not Checked In Yet";
+
+  const fmtTime = (ts?: string | null) => ts
+    ? new Date(ts).toLocaleTimeString("en-IN", { hour12: true, hour: "2-digit", minute: "2-digit" })
+    : null;
+
+  const detailRows = [
+    { icon: "home", label: "Hostel", val: user?.hostelName || user?.hostelId },
+    { icon: "map-pin", label: "Room", val: user?.roomNumber },
+    { icon: "coffee", label: "Mess", val: user?.assignedMess || user?.allottedMess },
+    { icon: "phone", label: "Contact", val: user?.contactNumber || user?.phone },
+    { icon: "hash", label: "Roll No", val: user?.rollNumber },
+  ].filter(r => r.val);
+
+  const messCardNo = user?.messCardNo;
+  const messCardGiven = !!inv?.messCard;
+
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.pageHeader, { paddingTop: 16, borderBottomColor: theme.border }]}>
-        <Text style={[styles.pageTitle, { color: theme.text }]}>Attendance</Text>
-        <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>Today's status</Text>
+        <Text style={[styles.pageTitle, { color: theme.text }]}>My Status</Text>
+        <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>
+          {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" })}
+        </Text>
       </View>
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === "web" ? 80 : 90 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === "web" ? 80 : 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.tint} />}
+        showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <CardSkeleton />
+          <><CardSkeleton /><CardSkeleton /></>
         ) : (
           <>
-            {/* Status card */}
-            <View style={[styles.selfStatusCard, { backgroundColor: isOut ? "#6366f115" : isIn ? "#22c55e15" : theme.surface, borderColor: isOut ? "#6366f140" : isIn ? "#22c55e40" : theme.border }]}>
-              <Feather name={isOut ? "log-out" : isIn ? "log-in" : "clock"} size={28} color={isOut ? "#6366f1" : isIn ? "#22c55e" : "#f59e0b"} />
-              <Text style={[styles.selfStatusText, { color: isOut ? "#6366f1" : isIn ? "#22c55e" : "#f59e0b" }]}>
-                {isOut ? "Checked Out" : isIn ? "Checked In" : "Not Checked In Yet"}
-              </Text>
-              {checkin?.checkInTime && (
-                <Text style={[styles.selfStatusSub, { color: theme.textSecondary }]}>
-                  In: {new Date(checkin.checkInTime).toLocaleTimeString("en-IN", { hour12: true, hour: "2-digit", minute: "2-digit" })}
-                  {checkin.checkOutTime ? ` · Out: ${new Date(checkin.checkOutTime).toLocaleTimeString("en-IN", { hour12: true, hour: "2-digit", minute: "2-digit" })}` : ""}
-                </Text>
-              )}
+            {/* ── Campus Status ── */}
+            <View style={[styles.selfStatusCard, {
+              backgroundColor: statusColor + "12",
+              borderColor: statusColor + "40",
+            }]}>
+              <View style={[{ width: 52, height: 52, borderRadius: 16, backgroundColor: statusColor + "20", alignItems: "center", justifyContent: "center" }]}>
+                <Feather name={statusIcon as any} size={26} color={statusColor} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.selfStatusText, { color: statusColor }]}>{statusText}</Text>
+                {checkin?.checkInTime && (
+                  <Text style={[styles.selfStatusSub, { color: theme.textSecondary }]}>
+                    Check-in: {fmtTime(checkin.checkInTime)}
+                    {checkin.checkOutTime ? `  ·  Out: ${fmtTime(checkin.checkOutTime)}` : ""}
+                  </Text>
+                )}
+                {!checkin?.checkInTime && (
+                  <Text style={[styles.selfStatusSub, { color: theme.textTertiary }]}>
+                    Your volunteer will check you in at the hostel
+                  </Text>
+                )}
+              </View>
             </View>
 
-            {/* Inventory */}
+            {/* ── Mess Card ── */}
+            {(messCardNo || messCardGiven !== undefined) && (
+              <View style={[styles.selfCard, {
+                backgroundColor: theme.surface,
+                borderColor: messCardNo ? "#7c3aed40" : theme.border,
+                borderWidth: messCardNo ? 1.5 : 1,
+              }]}>
+                <View style={[{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }]}>
+                  <View style={[{ width: 34, height: 34, borderRadius: 10, backgroundColor: messCardNo ? "#7c3aed1A" : theme.border + "60", alignItems: "center", justifyContent: "center" }]}>
+                    <Feather name="credit-card" size={16} color={messCardNo ? "#a78bfa" : theme.textTertiary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[{ fontSize: 14, fontFamily: "Inter_700Bold", color: theme.text }]}>Mess Card</Text>
+                    <Text style={[{ fontSize: 11, fontFamily: "Inter_400Regular", color: theme.textSecondary, marginTop: 1 }]}>
+                      {messCardGiven ? "Card issued to you" : "Card not yet issued"}
+                    </Text>
+                  </View>
+                  <View style={[{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 }, messCardGiven ? { backgroundColor: "#22c55e12", borderColor: "#22c55e40" } : { backgroundColor: theme.border + "50", borderColor: theme.border }]}>
+                    <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: messCardGiven ? "#22c55e" : theme.textTertiary }}>
+                      {messCardGiven ? "ISSUED" : "PENDING"}
+                    </Text>
+                  </View>
+                </View>
+                {messCardNo ? (
+                  <View style={{ backgroundColor: "#7c3aed18", borderRadius: 12, borderWidth: 1, borderColor: "#7c3aed35", padding: 16, alignItems: "center" }}>
+                    <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#a78bfa", letterSpacing: 2, marginBottom: 6 }}>MESS CARD NUMBER</Text>
+                    <Text style={{ fontSize: 34, fontFamily: "Inter_700Bold", color: "#c4b5fd", letterSpacing: 5 }}>{messCardNo}</Text>
+                  </View>
+                ) : (
+                  <View style={{ backgroundColor: theme.border + "30", borderRadius: 10, padding: 12, alignItems: "center" }}>
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: theme.textTertiary }}>No card number assigned yet</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* ── Inventory ── */}
             <Text style={[styles.selfSection, { color: theme.text }]}>My Inventory</Text>
             <View style={styles.invRow}>
-              {items.map(({ key, given, submitted }) => (
-                (() => {
-                  const activeGiven = hasAttendanceSession && !!given;
-                  const activeSubmitted = hasAttendanceSession && !!submitted;
-                  return (
-                <View key={key} style={[styles.invCard, {
-                  backgroundColor: activeSubmitted ? "#22c55e15" : activeGiven ? theme.tint + "15" : theme.surface,
-                  borderColor: activeSubmitted ? "#22c55e40" : activeGiven ? theme.tint + "40" : theme.border,
-                }]}>
-                  <Feather
-                    name={activeSubmitted ? "check-circle" : activeGiven ? "package" : "circle"}
-                    size={22}
-                    color={activeSubmitted ? "#22c55e" : activeGiven ? theme.tint : theme.textTertiary}
-                  />
-                  <Text style={[styles.invCardLabel, { color: activeSubmitted ? "#22c55e" : activeGiven ? theme.tint : theme.textSecondary }]}> 
-                    {key.charAt(0).toUpperCase() + key.slice(1)}
-                  </Text>
-                  <Text style={[styles.invCardStatus, { color: activeSubmitted ? "#22c55e" : activeGiven ? theme.tint : theme.textTertiary }]}> 
-                    {activeSubmitted ? "Returned" : activeGiven ? "Given" : "—"}
-                  </Text>
-                </View>
-                  );
-                })()
-              ))}
+              {items.map(({ key, given, submitted }) => {
+                const activeGiven = hasAttendanceSession && !!given;
+                const activeSubmitted = hasAttendanceSession && !!submitted;
+                return (
+                  <View key={key} style={[styles.invCard, {
+                    backgroundColor: activeSubmitted ? "#22c55e15" : activeGiven ? theme.tint + "15" : theme.surface,
+                    borderColor: activeSubmitted ? "#22c55e40" : activeGiven ? theme.tint + "40" : theme.border,
+                  }]}>
+                    <Feather
+                      name={activeSubmitted ? "check-circle" : activeGiven ? "package" : "circle"}
+                      size={22}
+                      color={activeSubmitted ? "#22c55e" : activeGiven ? theme.tint : theme.textTertiary}
+                    />
+                    <Text style={[styles.invCardLabel, { color: activeSubmitted ? "#22c55e" : activeGiven ? theme.tint : theme.textSecondary }]}>
+                      {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </Text>
+                    <Text style={[styles.invCardStatus, { color: activeSubmitted ? "#22c55e" : activeGiven ? theme.tint : theme.textTertiary }]}>
+                      {activeSubmitted ? "Returned" : activeGiven ? "Given" : "—"}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
-            {!isIn && !isOut && (
-              <View style={[styles.hintBox, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 12 }]}>
-                <Feather name="info" size={13} color={theme.textTertiary} />
-                <Text style={[styles.hintText, { color: theme.textSecondary }]}>Your volunteer will check you in when you arrive at the hostel.</Text>
-              </View>
+
+            {/* ── My Details ── */}
+            {detailRows.length > 0 && (
+              <>
+                <Text style={[styles.selfSection, { color: theme.text, marginTop: 8 }]}>My Details</Text>
+                <View style={[styles.selfCard, { padding: 0, overflow: "hidden", backgroundColor: theme.surface }]}>
+                  {detailRows.map((r, i) => (
+                    <View key={r.label} style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 12 }, i < detailRows.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
+                      <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: theme.tint + "15", alignItems: "center", justifyContent: "center" }}>
+                        <Feather name={r.icon as any} size={13} color={theme.tint} />
+                      </View>
+                      <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: "Inter_500Medium" }}>{r.label}</Text>
+                      <Text style={{ fontSize: 13, color: theme.text, fontFamily: "Inter_600SemiBold", maxWidth: "55%", textAlign: "right" }} numberOfLines={1}>{r.val}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
             )}
           </>
         )}
@@ -1071,10 +1149,11 @@ const styles = StyleSheet.create({
   revokeBtnTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#991b1b" },
   revokeBtnSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1, lineHeight: 14 },
   // Student self view
-  selfStatusCard: { padding: 20, borderRadius: 14, borderWidth: 1, alignItems: "center", gap: 8, marginBottom: 20 },
-  selfStatusText: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  selfStatusSub: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  selfSection: { fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 12 },
+  selfStatusCard: { flexDirection: "row", alignItems: "center", gap: 14, padding: 18, borderRadius: 16, borderWidth: 1.5, marginBottom: 16 },
+  selfStatusText: { fontSize: 17, fontFamily: "Inter_700Bold" },
+  selfStatusSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 3 },
+  selfCard: { borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 16 },
+  selfSection: { fontSize: 14, fontFamily: "Inter_700Bold", marginBottom: 10, letterSpacing: 0.3 },
   invRow: { flexDirection: "row", gap: 10 },
   invCard: { flex: 1, alignItems: "center", padding: 14, borderRadius: 12, borderWidth: 1, gap: 6 },
   invCardLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold" },

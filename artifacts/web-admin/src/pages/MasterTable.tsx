@@ -29,7 +29,7 @@ export default function MasterTable() {
 
   const filtered = useMemo(() => (students as any[]).filter((s: any) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || s.name?.toLowerCase().includes(q) || s.rollNumber?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.roomNumber?.toLowerCase().includes(q);
+    const matchSearch = !q || s.name?.toLowerCase().includes(q) || s.rollNumber?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.roomNumber?.toLowerCase().includes(q) || (s.messCardNo || "").toLowerCase().includes(q);
     const matchHostel = !hostelFilter || s.hostelId === hostelFilter;
     const matchMess = !messFilter || s.assignedMess === messFilter;
     return matchSearch && matchHostel && matchMess;
@@ -76,7 +76,7 @@ export default function MasterTable() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/8">
-                    {["#", "Name", "Roll No", "Email", "Hostel", "Room", "Mess", "Phone", "Status"].map((h) => (
+                    {["#", "Name", "Roll No", "Email", "Hostel", "Room", "Mess", "Mess Card #", "Phone", "Status"].map((h) => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -98,6 +98,11 @@ export default function MasterTable() {
                       <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{hostelMap[s.hostelId] || "—"}</td>
                       <td className="px-4 py-3 text-xs text-slate-400">{s.roomNumber || "—"}</td>
                       <td className="px-4 py-3 text-xs text-slate-400">{s.assignedMess || "—"}</td>
+                      <td className="px-4 py-3">
+                        {s.messCardNo
+                          ? <span className="font-mono font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-2 py-0.5 text-xs tracking-wider">#{s.messCardNo}</span>
+                          : <span className="text-xs text-slate-600">—</span>}
+                      </td>
                       <td className="px-4 py-3 text-xs text-slate-500">{s.phone || s.contactNumber || "—"}</td>
                       <td className="px-4 py-3">
                         <Badge

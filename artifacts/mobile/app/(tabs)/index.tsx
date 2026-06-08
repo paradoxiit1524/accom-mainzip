@@ -884,8 +884,8 @@ export default function HomeScreen() {
                 Quick Access
               </Text>
               <View style={styles.quickGrid}>
-                <QuickCard label="Lost & Found" icon="search" color={theme.tint} onPress={() => go("/(tabs)/lostandfound")} />
-                <QuickCard label="Notifications" icon="bell" color="#8b5cf6" onPress={() => go("/(tabs)/notifications")} />
+                <QuickCard label="My Status" icon="activity" color={theme.tint} onPress={() => go("/(tabs)/attendance")} />
+                <QuickCard label="Alerts" icon="bell" color="#8b5cf6" onPress={() => go("/(tabs)/notifications")} />
                 <QuickCard label="Profile" icon="user" color="#22c55e" onPress={() => go("/(tabs)/profile")} />
               </View>
             </>

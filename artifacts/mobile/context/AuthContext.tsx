@@ -28,11 +28,14 @@ export interface User {
   phone?: string;
   contactNumber?: string;
   mobileNumber?: string;
+  gender?: string;
   area?: string;
   hostelId?: string;
   hostelName?: string;
   roomNumber?: string;
   assignedMess?: string;
+  allottedMess?: string;
+  messCardNo?: string;
   attendanceStatus?: string;
   isActive?: boolean;
   lastActiveAt?: string;
