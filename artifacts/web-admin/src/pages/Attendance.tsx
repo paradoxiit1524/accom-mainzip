@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, Card, Table, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
-import { ClipboardCheck, Download, RefreshCw, CheckCircle, XCircle, UserPlus, Search, X, Calendar, CalendarDays } from "lucide-react";
-
+import { ClipboardCheck, Download, RefreshCw, CheckCircle, XCircle, UserPlus, Search, X, Calendar, CalendarDays, LogIn, LogOut } from "lucide-react";
 import { format } from "date-fns";
 
 const COORD_UP = ["coordinator", "admin", "superadmin"];
@@ -14,6 +13,166 @@ function fmt(ts?: string | null) {
   return new Date(ts).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: true, hour: "2-digit", minute: "2-digit" });
 }
 
+// ─── Volunteer Room Attendance View ─────────────────────────────────────────
+function VolunteerAttendance() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const hostelId = user?.hostelId || "";
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "entered" | "not_entered">("all");
+
+  const { data: students = [], isLoading, refetch } = useQuery<any[]>({
+    queryKey: ["vol-attendance", hostelId],
+    queryFn: () => apiFetch<any[]>(`/attendance${hostelId ? `?hostelId=${hostelId}` : ""}`),
+    refetchInterval: 15000,
+    enabled: !!hostelId,
+  });
+
+  const markMut = useMutation({
+    mutationFn: ({ studentId, status }: { studentId: string; status: string }) =>
+      apiFetch(`/attendance/${studentId}`, { method: "POST", body: JSON.stringify({ status }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["vol-attendance"] }),
+  });
+
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+
+  async function toggle(studentId: string, current: string) {
+    const next = current === "entered" ? "not_entered" : "entered";
+    setPendingIds(p => new Set([...p, studentId]));
+    try {
+      await markMut.mutateAsync({ studentId, status: next });
+    } finally {
+      setPendingIds(p => { const n = new Set(p); n.delete(studentId); return n; });
+    }
+  }
+
+  const entered = (students as any[]).filter((s: any) => s.attendance?.status === "entered").length;
+  const notEntered = (students as any[]).length - entered;
+
+  const filtered = (students as any[]).filter((s: any) => {
+    const status = s.attendance?.status || "not_entered";
+    if (filter === "entered" && status !== "entered") return false;
+    if (filter === "not_entered" && status !== "not_entered") return false;
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (s.name || "").toLowerCase().includes(q) ||
+      (s.rollNumber || "").toLowerCase().includes(q) ||
+      (s.roomNumber || "").toLowerCase().includes(q);
+  });
+
+  if (!hostelId) {
+    return (
+      <EmptyState icon={ClipboardCheck} title="No Hostel Assigned"
+        sub="You need to be assigned to a hostel to mark attendance." />
+    );
+  }
+
+  return (
+    <div className="fade-in">
+      <PageHeader
+        title="Room Attendance"
+        subtitle={`Marking entry for ${hostelId} hostel — today`}
+        action={
+          <Button variant="ghost" size="sm" onClick={() => refetch()}>
+            <RefreshCw size={13} /> Refresh
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {[
+          { label: "Entered", value: entered, icon: CheckCircle, color: "text-green-400 bg-green-500/15" },
+          { label: "Not Entered", value: notEntered, icon: XCircle, color: "text-red-400 bg-red-500/15" },
+          { label: "Total Students", value: (students as any[]).length, icon: ClipboardCheck, color: "text-purple-400 bg-purple-500/15" },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <Card key={label} className="p-4 flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+              <Icon size={18} />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-white">{value}</p>
+              <p className="text-xs text-slate-500">{label}</p>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <div className="p-4 border-b border-white/8 flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-48">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, roll, room…"
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-100 outline-none focus:border-purple-500/60 transition-all"
+            />
+          </div>
+          <div className="flex gap-1">
+            {(["all", "entered", "not_entered"] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                  filter === f
+                    ? "bg-purple-600/20 text-purple-400 border-purple-500/30"
+                    : "text-slate-500 border-white/8 hover:bg-white/5 hover:text-slate-300"
+                }`}>
+                {f === "all" ? "All" : f === "entered" ? "Entered" : "Not Entered"}
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-slate-500 ml-auto">{filtered.length} students</span>
+        </div>
+
+        {isLoading ? (
+          <div className="py-12 flex justify-center"><Spinner size={24} /></div>
+        ) : filtered.length === 0 ? (
+          <EmptyState icon={ClipboardCheck} title="No students" sub="No students match your filters" />
+        ) : (
+          <Table headers={["Student", "Roll No", "Room", "Status", "Mark"]}>
+            {filtered.map((s: any) => {
+              const status = s.attendance?.status || "not_entered";
+              const isPending = pendingIds.has(s.id);
+              return (
+                <tr key={s.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-purple-400 text-xs font-bold">{(s.name || "?")[0].toUpperCase()}</span>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-200">{s.name}</p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-400">{s.rollNumber || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-slate-400">{s.roomNumber || "—"}</td>
+                  <td className="px-4 py-3">
+                    {status === "entered"
+                      ? <Badge label="Entered" color="green" />
+                      : <Badge label="Not Entered" color="gray" />}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => toggle(s.id, status)}
+                      disabled={isPending}
+                      className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all disabled:opacity-50 flex items-center gap-1 ${
+                        status === "entered"
+                          ? "bg-red-500/10 hover:bg-red-500/20 text-red-400 border-red-500/20"
+                          : "bg-green-500/10 hover:bg-green-500/20 text-green-400 border-green-500/20"
+                      }`}
+                    >
+                      {isPending ? <Spinner size={12} /> : status === "entered" ? <><LogOut size={11} /> Mark Not Entered</> : <><LogIn size={11} /> Mark Entered</>}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </Table>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+// ─── Check-In Modal (coordinator/admin/superadmin) ───────────────────────────
 function CheckInModal({ visible, onClose, hostels, onSuccess }: { visible: boolean; onClose: () => void; hostels: any[]; onSuccess: () => void }) {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -39,9 +198,7 @@ function CheckInModal({ visible, onClose, hostels, onSuccess }: { visible: boole
 
   async function handleCheckIn(studentId: string) {
     setChecking(studentId);
-    try {
-      await checkInMut.mutateAsync(studentId);
-    } catch {}
+    try { await checkInMut.mutateAsync(studentId); } catch {}
     setChecking(null);
   }
 
@@ -123,7 +280,8 @@ function CheckInModal({ visible, onClose, hostels, onSuccess }: { visible: boole
   );
 }
 
-export default function Attendance() {
+// ─── Coordinator/Admin/SuperAdmin Attendance View ────────────────────────────
+function CoordAttendance() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const isRestricted = !COORD_UP.includes(user?.role || "");
@@ -177,7 +335,7 @@ export default function Attendance() {
         {[
           { label: "In Campus", value: inCampus, icon: CheckCircle, color: "text-green-400 bg-green-500/15" },
           { label: "Checked Out", value: checkedOut, icon: XCircle, color: "text-blue-400 bg-blue-500/15" },
-          { label: "Total Records", value: checkins.length, icon: ClipboardCheck, color: "text-purple-400 bg-purple-500/15" },
+          { label: "Total", value: (checkins as any[]).length, icon: ClipboardCheck, color: "text-purple-400 bg-purple-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="p-4 flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
@@ -193,115 +351,93 @@ export default function Attendance() {
 
       <Card>
         <div className="p-4 border-b border-white/8 flex flex-wrap gap-3 items-center">
-          {/* Date mode toggle */}
-          <div className="flex rounded-lg border border-white/10 overflow-hidden">
-            <button
-              onClick={() => setAllDates(false)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
-                !allDates ? "bg-purple-600 text-white" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Calendar size={12} /> By Date
-            </button>
-            <button
-              onClick={() => setAllDates(true)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors border-l border-white/10 ${
-                allDates ? "bg-purple-600 text-white" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <CalendarDays size={12} /> All Dates
-            </button>
-          </div>
-
-          {/* Date picker — only shown in "By Date" mode */}
-          {!allDates && (
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-slate-500" />
             <input
               type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              value={allDates ? "" : date}
               max={today}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none focus:border-purple-500/60 transition-all"
+              disabled={allDates}
+              onChange={e => setDate(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-purple-500/60 transition-all disabled:opacity-40"
             />
-          )}
-
+          </div>
+          <button
+            onClick={() => setAllDates(a => !a)}
+            className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all ${
+              allDates ? "bg-purple-600/20 text-purple-400 border-purple-500/30" : "text-slate-400 border-white/8 hover:bg-white/5"
+            }`}
+          >
+            <CalendarDays size={13} /> All Dates
+          </button>
           <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40" disabled={isRestricted}>
             <option value="">All Hostels</option>
-            {hostels.map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
+            {(hostels as any[]).map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </Select>
           <Button variant="ghost" size="sm" onClick={() => refetch()}>
             <RefreshCw size={13} /> Refresh
           </Button>
-          <span className="text-xs text-slate-500 ml-auto">{checkins.length} records</span>
+          <span className="text-xs text-slate-500 ml-auto">{(checkins as any[]).length} records</span>
         </div>
 
         {isLoading ? (
           <div className="py-12 flex justify-center"><Spinner size={24} /></div>
-        ) : checkins.length === 0 ? (
-          <EmptyState icon={ClipboardCheck} title="No check-ins found" sub={allDates ? "No attendance records found" : "No attendance records for this date/hostel"} />
+        ) : (checkins as any[]).length === 0 ? (
+          <EmptyState icon={ClipboardCheck} title="No check-ins" sub="No students checked in for this date/filter" />
         ) : (
-          <Table headers={["Student", "Roll", "Room", "Hostel", "Date", "Marked By", "Check In", "Check Out", "Status", "Actions"]}>
-            {checkins.map((c: any) => {
-              const checkedOutNow = !!c.checkOutTime;
-              return (
-                <tr key={c.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
-                  <td className="px-4 py-3">
+          <Table headers={["Student", "Hostel", "Room", "Check In", "Check Out", "Status", "Actions"]}>
+            {(checkins as any[]).map((c: any) => (
+              <tr key={c.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+                      <span className="text-purple-400 text-[11px] font-bold">{(c.studentName || "?")[0].toUpperCase()}</span>
+                    </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-200">{c.studentName || "—"}</p>
-                      <p className="text-xs text-slate-500">{c.studentEmail || ""}</p>
+                      <p className="text-sm font-semibold text-slate-200">{c.studentName}</p>
+                      <p className="text-xs text-slate-500">{c.rollNumber || c.email}</p>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-400">{c.studentRoll || "—"}</td>
-                  <td className="px-4 py-3 text-sm text-slate-400">{c.studentRoom || "—"}</td>
-                  <td className="px-4 py-3 text-sm text-slate-400">
-                    {hostels.find((h: any) => h.id === c.hostelId)?.name || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{c.date || "—"}</td>
-                  <td className="px-4 py-3 text-xs text-slate-400">{c.volunteerName || "—"}</td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-green-400">{fmt(c.checkInTime)}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-sm font-medium ${checkedOutNow ? "text-blue-400" : "text-slate-600"}`}>
-                      {fmt(c.checkOutTime)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge
-                      label={checkedOutNow ? "Checked Out" : "In Campus"}
-                      color={checkedOutNow ? "blue" : "green"}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1.5">
-                      {!checkedOutNow ? (
-                        <button
-                          onClick={() => checkoutMut.mutate(c.id)}
-                          disabled={checkoutMut.isPending}
-                          className="text-xs px-2.5 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/25 rounded-lg transition-all disabled:opacity-50"
-                        >
-                          Check Out
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => revokeCheckoutMut.mutate(c.id)}
-                          disabled={revokeCheckoutMut.isPending}
-                          className="text-xs px-2.5 py-1 bg-yellow-500/15 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/25 rounded-lg transition-all disabled:opacity-50"
-                        >
-                          Undo Out
-                        </button>
-                      )}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-400">{c.hostelId || "—"}</td>
+                <td className="px-4 py-3 text-sm text-slate-400">{c.roomNumber || "—"}</td>
+                <td className="px-4 py-3 text-sm text-slate-300">{fmt(c.checkInTime)}</td>
+                <td className="px-4 py-3 text-sm text-slate-300">{fmt(c.checkOutTime)}</td>
+                <td className="px-4 py-3">
+                  {c.checkOutTime
+                    ? <Badge label="Checked Out" color="blue" />
+                    : <Badge label="In Campus" color="green" />}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1.5">
+                    {!c.checkOutTime ? (
                       <button
-                        onClick={() => { if (confirm("Revoke this student's check-in?")) revokeCheckinMut.mutate(c.studentId); }}
-                        disabled={revokeCheckinMut.isPending}
-                        className="text-xs px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition-all disabled:opacity-50"
+                        onClick={() => checkoutMut.mutate(c.id)}
+                        disabled={checkoutMut.isPending}
+                        className="text-xs px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1"
                       >
-                        Revoke
+                        <LogOut size={11} /> Check Out
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    ) : (
+                      <button
+                        onClick={() => revokeCheckoutMut.mutate(c.id)}
+                        disabled={revokeCheckoutMut.isPending}
+                        className="text-xs px-2.5 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/20 rounded-lg transition-all disabled:opacity-50"
+                      >
+                        Undo Checkout
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { if (confirm(`Revoke check-in for ${c.studentName}?`)) revokeCheckinMut.mutate(c.studentId); }}
+                      disabled={revokeCheckinMut.isPending}
+                      className="text-xs px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition-all disabled:opacity-50"
+                    >
+                      Revoke
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </Table>
         )}
       </Card>
@@ -309,9 +445,16 @@ export default function Attendance() {
       <CheckInModal
         visible={checkInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
-        hostels={hostels}
-        onSuccess={() => { qc.invalidateQueries({ queryKey: ["checkins"] }); refetch(); }}
+        hostels={hostels as any[]}
+        onSuccess={() => refetch()}
       />
     </div>
   );
+}
+
+// ─── Main export — role-adaptive ─────────────────────────────────────────────
+export default function Attendance() {
+  const { user } = useAuth();
+  if (user?.role === "volunteer") return <VolunteerAttendance />;
+  return <CoordAttendance />;
 }
