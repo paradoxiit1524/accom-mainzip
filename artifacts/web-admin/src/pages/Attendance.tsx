@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, Card, Table, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
+import { ActiveGuard } from "@/components/ActiveGuard";
 import {
   ClipboardCheck, Download, RefreshCw, CheckCircle, XCircle, UserPlus,
   Search, X, Calendar, CalendarDays, LogIn, LogOut, Package,
@@ -777,6 +778,9 @@ function CoordAttendance() {
 
 export default function Attendance() {
   const { user } = useAuth();
-  if (user?.role === "volunteer") return <VolunteerAttendance />;
-  return <CoordAttendance />;
+  return (
+    <ActiveGuard>
+      {user?.role === "volunteer" ? <VolunteerAttendance /> : <CoordAttendance />}
+    </ActiveGuard>
+  );
 }

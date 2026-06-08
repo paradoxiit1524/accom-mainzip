@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, Card, Table, Input, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
+import { ActiveGuard } from "@/components/ActiveGuard";
 import {
   Package, Download, RefreshCw, Search, Lock, Unlock,
   CheckSquare, Square, CheckCircle, Clock, AlertCircle, RotateCcw, LogIn,
@@ -473,6 +474,9 @@ function CoordInventory() {
 
 export default function Inventory() {
   const { user } = useAuth();
-  if (user?.role === "volunteer") return <VolunteerInventory />;
-  return <CoordInventory />;
+  return (
+    <ActiveGuard>
+      {user?.role === "volunteer" ? <VolunteerInventory /> : <CoordInventory />}
+    </ActiveGuard>
+  );
 }
