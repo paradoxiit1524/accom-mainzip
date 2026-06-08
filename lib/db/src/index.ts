@@ -4,7 +4,8 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-const connectionString = process.env.DATABASE_URL;
+// RAILWAY_DATABASE_URL takes priority so both web and app share the same real data
+const connectionString = process.env.RAILWAY_DATABASE_URL || process.env.DATABASE_URL;
 if (!connectionString) {
   console.error("[DB] WARNING: DATABASE_URL is not set. Database queries will fail. Set DATABASE_URL in your environment variables.");
 }
