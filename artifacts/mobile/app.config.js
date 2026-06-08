@@ -1,4 +1,4 @@
-const PROD_API = process.env.EXPO_PUBLIC_API_URL || "https://3ebd7d0b-cc28-4774-850d-4eac0c847cd3-00-3p6ry8rmt634z.sisko.replit.dev/api";
+const PROD_API = process.env.EXPO_PUBLIC_API_URL || "https://campusops-api-production.up.railway.app/api";
 
 module.exports = function applyAppConfig({ config }) {
   const proxyUrl = process.env.EXPO_PUBLIC_WEB_ORIGIN || "https://localhost";

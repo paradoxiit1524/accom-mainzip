@@ -76,7 +76,7 @@ EXPO_NO_DOTENV = "1"
 SEED_REAL_DATA = "false"
 JWT_SECRET = "f6abfd33b3d2b80c0f5f95a966c729a4a4475f307bd087b3a77911a4c4924327"
 API_TARGET = "http://127.0.0.1:8080"
-EXPO_PUBLIC_API_URL = "https://3ebd7d0b-cc28-4774-850d-4eac0c847cd3-00-3p6ry8rmt634z.sisko.replit.dev/api"
+EXPO_PUBLIC_API_URL = "https://campusops-api-production.up.railway.app/api"
 AUTO_SEED = "false"
 
 [[ports]]

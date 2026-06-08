@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, Rea
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-const PROD_API = "https://3ebd7d0b-cc28-4774-850d-4eac0c847cd3-00-3p6ry8rmt634z.sisko.replit.dev/api";
+const PROD_API = "https://campusops-api-production.up.railway.app/api";
 
 // Priority:
 // 1. Explicit env override (EXPO_PUBLIC_API_URL)
