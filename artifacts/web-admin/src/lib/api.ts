@@ -1,15 +1,39 @@
 export const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") || "/api";
 
+const TOKEN_KEY = "campusops_token";
+
+// iOS Safari in private mode throws QuotaExceededError on localStorage writes.
+// Fall back to sessionStorage, then in-memory as a last resort.
+let _memToken: string | null = null;
+
+function storageGet(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { /* blocked */ }
+  try { return sessionStorage.getItem(key); } catch { /* blocked */ }
+  return _memToken;
+}
+
+function storageSet(key: string, value: string) {
+  try { localStorage.setItem(key, value); return; } catch { /* blocked */ }
+  try { sessionStorage.setItem(key, value); return; } catch { /* blocked */ }
+  _memToken = value;
+}
+
+function storageRemove(key: string) {
+  try { localStorage.removeItem(key); } catch { /* blocked */ }
+  try { sessionStorage.removeItem(key); } catch { /* blocked */ }
+  _memToken = null;
+}
+
 export function getToken(): string | null {
-  return localStorage.getItem("campusops_token");
+  return storageGet(TOKEN_KEY);
 }
 
 export function setToken(token: string) {
-  localStorage.setItem("campusops_token", token);
+  storageSet(TOKEN_KEY, token);
 }
 
 export function clearToken() {
-  localStorage.removeItem("campusops_token");
+  storageRemove(TOKEN_KEY);
 }
 
 export async function apiFetch<T = any>(
