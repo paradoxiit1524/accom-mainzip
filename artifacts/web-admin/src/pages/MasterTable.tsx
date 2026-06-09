@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
 import { PageHeader, Card, Input, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
 import { GraduationCap, Download, Search } from "lucide-react";
 
 export default function MasterTable() {
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [hostelFilter, setHostelFilter] = useState("");
   const [messFilter, setMessFilter] = useState("");
   const [page, setPage] = useState(0);
@@ -28,12 +30,12 @@ export default function MasterTable() {
   const messList = useMemo(() => [...new Set((students as any[]).map((s: any) => s.assignedMess).filter(Boolean))], [students]);
 
   const filtered = useMemo(() => (students as any[]).filter((s: any) => {
-    const q = search.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     const matchSearch = !q || s.name?.toLowerCase().includes(q) || s.rollNumber?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.roomNumber?.toLowerCase().includes(q) || (s.messCardNo || "").toLowerCase().includes(q);
     const matchHostel = !hostelFilter || s.hostelId === hostelFilter;
     const matchMess = !messFilter || s.assignedMess === messFilter;
     return matchSearch && matchHostel && matchMess;
-  }), [students, search, hostelFilter, messFilter]);
+  }), [students, debouncedSearch, hostelFilter, messFilter]);
 
   const pages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);

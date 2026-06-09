@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
 import { PageHeader, Card, Table, Input, Select, Button, Modal, EmptyState, Badge } from "@/components/ui";
 import { Users, Download, Search, Eye, Building2, CreditCard } from "lucide-react";
 
 export default function Students() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [hostelFilter, setHostelFilter] = useState("");
   const [messFilter, setMessFilter] = useState("");
   const [selected, setSelected] = useState<any>(null);
@@ -18,7 +20,8 @@ export default function Students() {
   const { data: studentsData, isLoading } = useQuery({
     queryKey: ["students"],
     queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000"),
-    refetchInterval: 30000,
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
   const students: any[] = studentsData?.students ?? [];
 
@@ -42,7 +45,7 @@ export default function Students() {
   const messList = [...new Set(students.map((s: any) => s.assignedMess).filter(Boolean))];
 
   const filtered = students.filter((s: any) => {
-    const q = search.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     const matchSearch = !q || s.name?.toLowerCase().includes(q) || s.rollNumber?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.roomNumber?.toLowerCase().includes(q) || s.messCardNo?.toLowerCase().includes(q);
     const matchHostel = !hostelFilter || s.hostelId === hostelFilter;
     const matchMess = !messFilter || s.assignedMess === messFilter;

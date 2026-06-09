@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { db, usersTable, hostelsTable, attendanceTable, studentInventoryTable } from "@workspace/db";
-import { eq, ilike, or, and } from "drizzle-orm";
-import { requireAuth, AuthRequest, COORDINATOR_ROLES } from "../lib/auth.js";
+import { db, usersTable, hostelsTable } from "@workspace/db";
+import { eq, ilike, or, and, inArray, count } from "drizzle-orm";
+import { requireAuth, AuthRequest } from "../lib/auth.js";
 
 const router = Router();
 
@@ -16,17 +16,59 @@ function parseAssignedHostelIds(raw?: string | null): string[] {
 
 // GET /api/search?q=&limit=20&offset=0
 router.get("/", requireAuth, async (req: AuthRequest, res) => {
-  const q = ((req.query.q as string) || "").trim().toLowerCase();
+  const q = ((req.query.q as string) || "").trim();
   const limit = Math.min(Number(req.query.limit) || 20, 100);
   const offset = Number(req.query.offset) || 0;
 
   if (!q || q.length < 2) { res.json({ results: [], total: 0 }); return; }
 
-  const [caller] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
-  if (!caller) { res.status(401).json({ message: "Unauthorized" }); return; }
+  const [caller] = await db.select({
+    id: usersTable.id,
+    role: usersTable.role,
+    hostelId: usersTable.hostelId,
+    assignedHostelIds: usersTable.assignedHostelIds,
+  }).from(usersTable).where(eq(usersTable.id, req.userId!));
 
-  // Fetch all users and filter in JS (more flexible for search)
-  let allUsers = await db.select({
+  if (!caller) { res.status(401).json({ message: "Unauthorized" }); return; }
+  if (caller.role === "student") { res.json({ results: [], total: 0 }); return; }
+
+  // Build hostel scope condition
+  let hostelCondition: any = undefined;
+  if (caller.role === "volunteer") {
+    if (!caller.hostelId) { res.json({ results: [], total: 0, limit, offset }); return; }
+    hostelCondition = and(eq(usersTable.hostelId, caller.hostelId), eq(usersTable.role, "student"));
+  } else if (caller.role === "coordinator" || caller.role === "admin") {
+    const assignedIds = parseAssignedHostelIds(caller.assignedHostelIds);
+    const scoped = assignedIds.length > 0
+      ? Array.from(new Set(assignedIds))
+      : (caller.hostelId ? [caller.hostelId] : []);
+    if (scoped.length === 0) { res.json({ results: [], total: 0, limit, offset }); return; }
+    hostelCondition = inArray(usersTable.hostelId, scoped);
+  }
+
+  // DB-level search with ilike — fast even with 20k users
+  const searchCondition = or(
+    ilike(usersTable.name, `%${q}%`),
+    ilike(usersTable.email, `%${q}%`),
+    ilike(usersTable.rollNumber, `%${q}%`),
+    ilike(usersTable.roomNumber, `%${q}%`),
+    ilike(usersTable.assignedMess, `%${q}%`),
+    ilike(usersTable.area, `%${q}%`),
+    ilike(usersTable.phone, `%${q}%`),
+    ilike(usersTable.contactNumber, `%${q}%`),
+    ilike(usersTable.messCardNo, `%${q}%`),
+  );
+
+  const whereClause = hostelCondition
+    ? and(hostelCondition, searchCondition)
+    : searchCondition;
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(whereClause);
+
+  const paginated = await db.select({
     id: usersTable.id,
     name: usersTable.name,
     email: usersTable.email,
@@ -42,46 +84,17 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
     messCardNo: usersTable.messCardNo,
     attendanceStatus: usersTable.attendanceStatus,
     isActive: usersTable.isActive,
-  }).from(usersTable);
+  }).from(usersTable)
+    .where(whereClause)
+    .limit(limit)
+    .offset(offset);
 
-  // Role-based filtering
-  if (caller.role === "volunteer") {
-    allUsers = allUsers.filter(u => u.hostelId === caller.hostelId && u.role === "student");
-  } else if (caller.role === "coordinator" || caller.role === "admin") {
-    const assignedIds = parseAssignedHostelIds(caller.assignedHostelIds);
-    const scoped = assignedIds.length > 0
-      ? Array.from(new Set(assignedIds))
-      : (caller.hostelId ? [caller.hostelId] : []);
-    if (scoped.length === 0) {
-      res.json({ results: [], total: 0, limit, offset });
-      return;
-    }
-    allUsers = allUsers.filter(u => scoped.includes(u.hostelId || ""));
-  } else if (caller.role === "student") {
-    res.json({ results: [], total: 0 });
-    return;
-  }
-
-  // Filter by search query
-  const filtered = allUsers.filter(u =>
-    (u.name || "").toLowerCase().includes(q) ||
-    (u.email || "").toLowerCase().includes(q) ||
-    (u.rollNumber || "").toLowerCase().includes(q) ||
-    (u.roomNumber || "").toLowerCase().includes(q) ||
-    (u.assignedMess || "").toLowerCase().includes(q) ||
-    (u.area || "").toLowerCase().includes(q) ||
-    (u.phone || "").toLowerCase().includes(q) ||
-    (u.contactNumber || "").toLowerCase().includes(q) ||
-    (u.messCardNo || "").toLowerCase().includes(q)
-  );
-
-  const total = filtered.length;
-  const paginated = filtered.slice(offset, offset + limit);
-
-  // Enrich with hostel names
+  // Enrich with hostel names in one query
   const hostelIds = [...new Set(paginated.map(u => u.hostelId).filter(Boolean) as string[])];
   const hostels = hostelIds.length > 0
-    ? await db.select({ id: hostelsTable.id, name: hostelsTable.name }).from(hostelsTable)
+    ? await db.select({ id: hostelsTable.id, name: hostelsTable.name })
+        .from(hostelsTable)
+        .where(inArray(hostelsTable.id, hostelIds))
     : [];
   const hostelMap: Record<string, string> = {};
   hostels.forEach(h => { hostelMap[h.id] = h.name; });

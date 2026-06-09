@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
 import { PageHeader, Card, Table, Input, Button, RoleBadge, Modal, Select, Spinner, EmptyState } from "@/components/ui";
 import { UserCog, Plus, Search, Trash2, CheckCircle, XCircle, RefreshCw, Building2, Key, AlertTriangle, X, Edit2, Eye, EyeOff } from "lucide-react";
 
@@ -29,6 +30,7 @@ function HostelBadges({ ids, hostels }: { ids: string[]; hostels: any[] }) {
 export default function Staff() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [roleFilter, setRoleFilter] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: "", email: "", password: "123456", role: "volunteer", contactNumber: "" });
@@ -48,15 +50,15 @@ export default function Staff() {
   const { data: staff = [], isLoading, refetch } = useQuery({
     queryKey: ["all-staff"],
     queryFn: () => apiFetch<any[]>("/staff/all"),
-    refetchInterval: 20000,
-    staleTime: 15000,
+    refetchInterval: 60000,
+    staleTime: 45000,
   });
 
   const { data: activeList = [] } = useQuery({
     queryKey: ["active-staff"],
     queryFn: () => apiFetch<any[]>("/staff/active-list"),
-    refetchInterval: 15000,
-    staleTime: 10000,
+    refetchInterval: 30000,
+    staleTime: 25000,
   });
 
   const { data: hostels = [] } = useQuery({
@@ -102,7 +104,7 @@ export default function Staff() {
   });
 
   const filtered = (staff as any[]).filter((s: any) => {
-    const q = search.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     const matchSearch = !q || s.name?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q);
     const matchRole = !roleFilter || s.role === roleFilter;
     return matchSearch && matchRole;
