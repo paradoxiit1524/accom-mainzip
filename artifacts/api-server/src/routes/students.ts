@@ -201,6 +201,9 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
         ilike(usersTable.assignedMess, `%${q}%`),
         ilike(usersTable.area, `%${q}%`),
         ilike(usersTable.hostelId, `%${q}%`),
+        ilike(usersTable.messCardNo, `%${q}%`),
+        ilike(usersTable.phone, `%${q}%`),
+        ilike(usersTable.contactNumber, `%${q}%`),
       )
     );
   }
